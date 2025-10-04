@@ -30,6 +30,10 @@ public:
   ///Loads level into parser,
   void load_file(char *file_name);
 
+  void obj_export(int id, const char *filepath);
+
+  void ply_export(int id, const char *filepath);
+
   std::vector<std::string> get_levels() const;
   //TODO - Convert an old map to new std::vector<map> get_level(int id);
 };

@@ -22,16 +22,16 @@ namespace original_classes {
 	};
 
 	struct thing{
-		uint16_t x;
-		uint16_t y;
+		int16_t x;
+		int16_t y;
 		uint16_t angle;
 		uint16_t type;
 		uint16_t flags;
 	};
 
 	struct linedef {
-		uint16_t v1;
-		uint16_t v2;
+		int16_t v1;
+		int16_t v2;
 		uint16_t flags;
 		uint16_t special_type;
 		uint16_t sector_tag;
@@ -39,8 +39,8 @@ namespace original_classes {
 	};
 
 	struct sidedef {
-		uint16_t x_offset;
-		uint16_t y_offset;
+		int16_t x_offset;
+		int16_t y_offset;
 		char upper_texture[8];
 		char middle_texture[8];
 		char lower_texture[8];
@@ -74,8 +74,8 @@ namespace original_classes {
 	};
 
 	struct sector {
-		uint16_t floor_height;
-		uint16_t ceiling_height;
+		int16_t floor_height;
+		int16_t ceiling_height;
 		char floor_texture[8];
 		char ceiling_texture[8];
 		uint16_t light_level;
