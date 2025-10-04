@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 
 
 ///Helper function to compare the lump names
@@ -140,80 +141,134 @@ cleanup:
 	throw std::runtime_error("Error parsing file");
 }
 
+struct vec3 {
+	int16_t x, y, z;
+	bool operator==(const vec3& other) const {
+		return  x == other.x &&
+				y == other.y &&
+				z == other.z;
+	}
+};
+
+struct vec2 {
+	int16_t x, y;
+	bool operator==(const vec2& other) const {
+		return  x == other.x &&
+				y == other.y;
+	}
+};
+
+namespace std {
+	template <>
+	struct hash<vec3> {
+		size_t operator()(const vec3& v) const {
+			size_t h1 = std::hash<int16_t>{}(v.x);
+			size_t h2 = std::hash<int16_t>{}(v.y);
+			size_t h3 = std::hash<int16_t>{}(v.z);
+			return h1 ^ (h2 << 1) ^ (h3 << 2);
+		}
+	};
+
+	template <>
+	struct hash<vec2> {
+		size_t operator()(const vec2& v) const {
+			size_t h1 = std::hash<int16_t>{}(v.x);
+			size_t h2 = std::hash<int16_t>{}(v.y);
+			return h1 ^ (h2 << 1);
+		}
+	};
+}
+
 void Parser::obj_export(int id, const char *filepath) {
-	auto mp = content->maps[id];
-	FILE* f = fopen(filepath, "w");
-	if (!f) return;
+    auto mp = content->maps[id];
+    FILE* f = fopen(filepath, "w");
+    if (!f) return;
 
-	std::vector<std::multimap<int, int> > sector_adj(mp->sectors.size());
+    // Write material library reference
+    fprintf(f, "mtllib solids.mtl\n");
 
+    // Store vertices per sector, preserving linedef order
+    std::vector<std::vector<vec3>> sector_vertices(mp->sectors.size());
+    std::unordered_map<vec3, int> vertex_to_index; // Maps vec3 to 1-based OBJ index
     uint16_t none = static_cast<uint16_t>(-1);
 
+    // Collect vertices in linedef order for each sector
     for (const auto& line : mp->linedefs) {
+        vec3 v1 = { (mp->vertexes[line.v1].x),
+                    (mp->vertexes[line.v1].y), 0};
+        vec3 v2 = { (mp->vertexes[line.v2].x),
+                    (mp->vertexes[line.v2].y), 0};
+
         if (line.sidedef[0] != none) {
             int s = mp->sidedefs[line.sidedef[0]].sector_tag;
-            sector_adj[s].insert({line.v1, line.v2});
+            sector_vertices[s].push_back(v1);
+            sector_vertices[s].push_back(v2);
         }
         if (line.sidedef[1] != none) {
             int s = mp->sidedefs[line.sidedef[1]].sector_tag;
-            sector_adj[s].insert({line.v2, line.v1});
+            sector_vertices[s].push_back(v1);
+            sector_vertices[s].push_back(v2);
         }
     }
 
+    // Buffers for OBJ output
+    std::string v_floor_buff = "g Floors\nusemtl Red\n";
+    std::string v_ceil_buff = "g Ceils\nusemtl Blue\n";
+    std::string v_floor_line_buff, v_ceil_line_buff;
     int v_count = 1; // OBJ indices start at 1
 
+    // Process each sector
     for (size_t i = 0; i < mp->sectors.size(); ++i) {
-        auto& adj = sector_adj[i];
-        while (!adj.empty()) {
-            // Find one loop
-            int start = adj.begin()->first;
-            int current = start;
-            std::vector<int> ordered;
-            bool closed = false;
-            do {
-                ordered.push_back(current);
-                auto it = adj.lower_bound(current);
-                if (it == adj.end() || it->first != current) {
-                    break;
-                }
-                int next = it->second;
-                adj.erase(it);
-                current = next;
-                if (current == start && !ordered.empty()) {
-                    closed = true;
-                    break;
-                }
-            } while (true);
+        if (sector_vertices[i].empty()) continue; // Skip empty sectors
 
-            if (!closed || ordered.size() < 3) {
-                continue;
+        std::unordered_set<vec3> unique_vertices; // Ensure no duplicates in this sector
+        std::string l_buf_floor = "l ";
+        std::string l_buf_ceil = "l ";
+
+        // Process vertices in order
+        for (const auto& vertex : sector_vertices[i]) {
+            if (unique_vertices.find(vertex) != unique_vertices.end()) continue; // Skip duplicates
+            unique_vertices.insert(vertex);
+
+            // Floor vertex
+            vec3 floor_vertex = {vertex.x, vertex.y, (mp->sectors[i].floor_height)};
+            if (vertex_to_index.find(floor_vertex) == vertex_to_index.end()) {
+                vertex_to_index[floor_vertex] = v_count++;
+                v_floor_buff += "v " + std::to_string(floor_vertex.x) + " " +
+                                std::to_string(floor_vertex.y) + " " +
+                                std::to_string(floor_vertex.z) + "\n";
             }
+            l_buf_floor += std::to_string(vertex_to_index[floor_vertex]) + " ";
 
-            // Write vertices and build line strings
-            std::string floor_str = "f ";
-            std::string ceil_str = "f ";
-            int first_floor = v_count;
-            int first_ceil = v_count + 1;
-            for (int vert_idx : ordered) {
-                auto& vert = mp->vertexes[vert_idx];
-                fprintf(f, "v %d %d %d\n", vert.x, vert.y, mp->sectors[i].floor_height);
-                fprintf(f, "v %d %d %d\n", vert.x, vert.y, mp->sectors[i].ceiling_height);
-                floor_str += std::to_string(v_count) + " ";
-                ceil_str += std::to_string(v_count + 1) + " ";
-                v_count += 2;
+            // Ceiling vertex
+            vec3 ceil_vertex = {vertex.x, vertex.y, (mp->sectors[i].ceiling_height)};
+            if (vertex_to_index.find(ceil_vertex) == vertex_to_index.end()) {
+                vertex_to_index[ceil_vertex] = v_count++;
+                v_ceil_buff += "v " + std::to_string(ceil_vertex.x) + " " +
+                               std::to_string(ceil_vertex.y) + " " +
+                               std::to_string(ceil_vertex.z) + "\n";
             }
-            // Close the loops
-            floor_str += std::to_string(first_floor);
-            ceil_str += std::to_string(first_ceil);
+            l_buf_ceil += std::to_string(vertex_to_index[ceil_vertex]) + " ";
+        }
 
-            // Write the lines
-            fprintf(f, "%s\n", floor_str.c_str());
-            fprintf(f, "%s\n", ceil_str.c_str());
+        // Close the loops if there are vertices
+        if (!unique_vertices.empty()) {
+            auto first_vertex = *unique_vertices.begin();
+            l_buf_floor += std::to_string(vertex_to_index[{first_vertex.x, first_vertex.y, mp->sectors[i].floor_height}]) + "\n";
+            l_buf_ceil += std::to_string(vertex_to_index[{first_vertex.x, first_vertex.y, mp->sectors[i].ceiling_height}]) + "\n";
+            v_floor_line_buff += l_buf_floor;
+            v_ceil_line_buff += l_buf_ceil;
         }
     }
 
-	fflush(f);
-	fclose(f);
+    // Write buffers to file
+    fprintf(f, "%s", v_floor_buff.c_str());
+    fprintf(f, "%s\n", v_floor_line_buff.c_str());
+    fprintf(f, "%s", v_ceil_buff.c_str());
+    fprintf(f, "%s\n", v_ceil_line_buff.c_str());
+
+    fflush(f);
+    fclose(f);
 }
 
 std::vector<std::string> Parser::get_levels() const {

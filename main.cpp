@@ -23,6 +23,6 @@ int main(int argc, char *argv[]) {
 		throw std::runtime_error("Invalid level id");
 	}
 
-	parser.obj_export(id, "doom_e1m1_sectors.obj");
+	parser.obj_export(id, "doom_e1m1_sectors_color.obj");
 	return 0;
 }
