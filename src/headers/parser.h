@@ -13,15 +13,25 @@
 
 
 
-class parser {
-  game_content* content;
+class Parser {
+  struct game_data {
+  	  original_classes::header header;
+      original_classes::lump* lumps;
+  };
+  game_content* content = nullptr;
 
-  void load_file(const char* path);
 
-
+  template<class T>
+  T *load_lump(FILE *file, original_classes::lump pointer);
 public:
-  std::vector<std::string> get_levels();
-  std::vector<map> get_level(int id);
+  ~Parser() {
+    delete content;
+  }
+  ///Loads level into parser,
+  void load_file(char *file_name);
+
+  std::vector<std::string> get_levels() const;
+  //TODO - Convert an old map to new std::vector<map> get_level(int id);
 };
 
 

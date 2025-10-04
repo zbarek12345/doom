@@ -5,10 +5,10 @@
 #ifndef GAME_CONTENT_H
 #define GAME_CONTENT_H
 
+///struct created in order to upkeep the wad file within the running game. Should take around 5mB so no trouble
 struct game_content{
    ///TODO - Textures;
 
-   map* map;
-
+   std::vector<original_map*> maps;
 };
 #endif //GAME_CONTENT_H

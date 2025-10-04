@@ -5,9 +5,8 @@ project('doom', 'cpp',
 regex = dependency('regex')
 
 doom = executable('doom',
-                  ['parser.h', 'parser.cpp', 'main.cpp'],
+                  ['src/parser.cpp', 'main.cpp'],
                   dependencies: [regex],
-                  install : true,
-                  win_subsystem: 'windows')
+                  install : true)
 
 test('test', doom)
