@@ -1,17 +1,10 @@
-//
-// Created by Wiktor on 30.05.2025.
-//
-#include <cstdint>
-#include <vector>
-#include <regex.h>
-#include <cstdio>
-#include <string>
-#include <wchar.h>
-#include "game_content.h"
 #ifndef PARSER_H
 #define PARSER_H
 
-
+#include <vector>
+#include <string>
+#include <wchar.h>
+#include "game_content.h"
 
 class Parser {
   struct game_data {

@@ -1,12 +1,7 @@
-//
-// Created by Wiktor on 02.10.2025.
-//
-
-#include <cstdint>
-
 #ifndef ORIGINAL_CLASSES_H
 #define ORIGINAL_CLASSES_H
 
+#include <cstdint>
 
 namespace original_classes {
 	struct header{

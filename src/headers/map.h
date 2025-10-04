@@ -1,10 +1,8 @@
-//
-// Created by Wiktor on 02.10.2025.
-//
-#include "original_classes.h"
-#include <vector>
 #ifndef MAP_H
 #define MAP_H
+
+#include "original_classes.h"
+#include <vector>
 
 struct original_map{
 	std::string level_name;

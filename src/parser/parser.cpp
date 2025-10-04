@@ -1,12 +1,6 @@
-//
-// Created by Wiktor on 30.05.2025.
-//
-
-#include "headers/parser.h"
-
+#include "../headers/parser.h"
 #include <stdexcept>
 #include <cstring>
-
 
 ///Helper function to compare the lump names
 bool compareLumpName(const char* lump1, const char* lump2) {
