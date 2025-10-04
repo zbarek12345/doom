@@ -6,6 +6,7 @@
 
 #include <stdexcept>
 #include <cstring>
+#include <map>
 #include <set>
 #include <unordered_map>
 
@@ -142,44 +143,74 @@ cleanup:
 void Parser::obj_export(int id, const char *filepath) {
 	auto mp = content->maps[id];
 	FILE* f = fopen(filepath, "w");
+	if (!f) return;
 
-	std::set<std::pair<int16_t,int16_t> > sectors_vertexes[mp->sectors.size()];
+	std::vector<std::multimap<int, int> > sector_adj(mp->sectors.size());
 
-	for (auto& line: mp->linedefs) {
-		auto s_tag = mp->sidedefs[line.sidedef[0]].sector_tag;
-		auto v1 = mp->vertexes[line.v1];
-		auto v2 = mp->vertexes[line.v2];
-		sectors_vertexes[s_tag].insert(std::make_pair(v1.x,v1.y));
-		sectors_vertexes[s_tag].insert(std::make_pair(v2.x,v2.y));
+    uint16_t none = static_cast<uint16_t>(-1);
 
-		if (line.sidedef[1]!=(uint16_t)-1) {
-			s_tag = mp->sidedefs[line.sidedef[1]].sector_tag;
-			sectors_vertexes[s_tag].insert(std::make_pair(v1.x,v1.y));
-			sectors_vertexes[s_tag].insert(std::make_pair(v2.x,v2.y));
-		}
-	}
+    for (const auto& line : mp->linedefs) {
+        if (line.sidedef[0] != none) {
+            int s = mp->sidedefs[line.sidedef[0]].sector_tag;
+            sector_adj[s].insert({line.v1, line.v2});
+        }
+        if (line.sidedef[1] != none) {
+            int s = mp->sidedefs[line.sidedef[1]].sector_tag;
+            sector_adj[s].insert({line.v2, line.v1});
+        }
+    }
 
-	std::string figures[mp->sectors.size()][2];
-	int v_count = 0;
-	for (int i =0;i<mp->sectors.size();i++) {
-		figures[i][0] = "l ";
-		figures[i][1] = "l ";
-		for (auto& e : sectors_vertexes[i]) {
-			fprintf(f, "v %d %d %d\n", e.first, e.second, mp->sectors[i].floor_height);
-			fprintf(f, "v %d %d %d\n", e.first, e.second, mp->sectors[i].ceiling_height);
-			figures[i][0] += std::to_string(v_count+1)+" ";
-			figures[i][1] += std::to_string(v_count+2)+" ";
-			v_count+=2;
-		}
-		figures[i][0] += std::to_string(v_count-sectors_vertexes[i].size()+1);
-		figures[i][1] += std::to_string(v_count-sectors_vertexes[i].size()+2);
-	}
+    int v_count = 1; // OBJ indices start at 1
 
-	for (int i =0;i<mp->sectors.size();i++) {
-		fprintf(f, "%s\n", figures[i][0].c_str());
-		fprintf(f, "%s\n", figures[i][1].c_str());
-	}
+    for (size_t i = 0; i < mp->sectors.size(); ++i) {
+        auto& adj = sector_adj[i];
+        while (!adj.empty()) {
+            // Find one loop
+            int start = adj.begin()->first;
+            int current = start;
+            std::vector<int> ordered;
+            bool closed = false;
+            do {
+                ordered.push_back(current);
+                auto it = adj.lower_bound(current);
+                if (it == adj.end() || it->first != current) {
+                    break;
+                }
+                int next = it->second;
+                adj.erase(it);
+                current = next;
+                if (current == start && !ordered.empty()) {
+                    closed = true;
+                    break;
+                }
+            } while (true);
 
+            if (!closed || ordered.size() < 3) {
+                continue;
+            }
+
+            // Write vertices and build line strings
+            std::string floor_str = "f ";
+            std::string ceil_str = "f ";
+            int first_floor = v_count;
+            int first_ceil = v_count + 1;
+            for (int vert_idx : ordered) {
+                auto& vert = mp->vertexes[vert_idx];
+                fprintf(f, "v %d %d %d\n", vert.x, vert.y, mp->sectors[i].floor_height);
+                fprintf(f, "v %d %d %d\n", vert.x, vert.y, mp->sectors[i].ceiling_height);
+                floor_str += std::to_string(v_count) + " ";
+                ceil_str += std::to_string(v_count + 1) + " ";
+                v_count += 2;
+            }
+            // Close the loops
+            floor_str += std::to_string(first_floor);
+            ceil_str += std::to_string(first_ceil);
+
+            // Write the lines
+            fprintf(f, "%s\n", floor_str.c_str());
+            fprintf(f, "%s\n", ceil_str.c_str());
+        }
+    }
 
 	fflush(f);
 	fclose(f);
