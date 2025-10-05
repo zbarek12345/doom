@@ -4,6 +4,7 @@
 
 #include "headers/parser.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <cstring>
 #include <map>
@@ -34,8 +35,6 @@ void Parser::load_file(char *file_name) {
 
 	fread(&gd.header, sizeof(original_classes::header), 1, file);
 
-	if (strncmp("IWAD", gd.header.file_descriptor, 4))
-		throw std::runtime_error("Not an IWAD file");
 
 	gd.lumps = (original_classes::lump*) malloc(gd.header.lump_count * sizeof(original_classes::lump));
 
@@ -141,42 +140,194 @@ cleanup:
 	throw std::runtime_error("Error parsing file");
 }
 
-struct vec3 {
-	int16_t x, y, z;
-	bool operator==(const vec3& other) const {
-		return  x == other.x &&
-				y == other.y &&
-				z == other.z;
-	}
-};
-
-struct vec2 {
-	int16_t x, y;
-	bool operator==(const vec2& other) const {
-		return  x == other.x &&
-				y == other.y;
-	}
-};
-
-namespace std {
-	template <>
-	struct hash<vec3> {
-		size_t operator()(const vec3& v) const {
-			size_t h1 = std::hash<int16_t>{}(v.x);
-			size_t h2 = std::hash<int16_t>{}(v.y);
-			size_t h3 = std::hash<int16_t>{}(v.z);
-			return h1 ^ (h2 << 1) ^ (h3 << 2);
+NewModels::Map* Parser::generateMap(int id) {
+	auto* mp = content->maps[id];
+	auto map = new NewModels::Map();
+	{
+		std::vector<std::set<NewModels::vec2> >Nodes(mp->sectors.size());
+		std::vector<std::vector<std::pair<NewModels::vec2, NewModels::vec2> > > Lines(mp->sectors.size());
+		uint16_t none = 0xFFFF;
+		for (auto& line: mp->linedefs) {
+			for (int i =0;i<2;i++) {
+				if (line.sidedef[i]!=none) {
+					NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
+									v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
+					auto sector= mp->sidedefs[line.sidedef[i]].sector_tag;
+					Nodes[sector].insert(v1);
+					Nodes[sector].insert(v2);
+					Lines[sector].emplace_back(std::make_pair(v1,v2));
+				}
+			}
 		}
-	};
 
-	template <>
-	struct hash<vec2> {
-		size_t operator()(const vec2& v) const {
-			size_t h1 = std::hash<int16_t>{}(v.x);
-			size_t h2 = std::hash<int16_t>{}(v.y);
-			return h1 ^ (h2 << 1);
+		printf("Lines loaded;\n");
+
+		map->sectors = std::vector<NewModels::Sector>(mp->sectors.size());
+		for ( int i = 0; i < mp->sectors.size(); i++ ) {
+			printf("Calculating sector #%d;\n", i);
+			auto sector = &map->sectors[i];
+
+			sector->floor_height = mp->sectors[i].floor_height;
+			sector->ceil_height = mp->sectors[i].ceiling_height;
+			{
+				std::vector<NewModels::vec2> temp;
+				int16_t ceil = mp->sectors[i].ceiling_height, floor = mp->sectors[i].floor_height;
+				for (auto node: Nodes[i]) {
+					temp.emplace_back(node);
+					sector->ceiling.push_back({node.x, node.y, ceil});
+					sector->floor.push_back({node.x, node.y, floor});
+				}
+
+				auto find_index = [&temp](const NewModels::vec2& pos) -> int {
+					for (size_t j = 0; j < temp.size(); ++j) {
+						if (temp[j] == pos) {
+							return static_cast<int>(j);
+						}
+					}
+					// If not found, handle error (assuming always found for valid input).
+					return -1;
+				};
+
+				// Start with the first line's starting point.
+				NewModels::vec2 start_pos = Lines[i][0].first;
+				int original_start = find_index(start_pos);
+				NewModels::vec2 current_pos = start_pos;
+				NewModels::vec2 previous_pos = {-100, -100};
+				// Add the starting index.
+				sector->line.push_back(original_start);
+				std::vector<bool> visited(temp.size(), false);
+				visited[original_start] = true;
+
+				while (true) {
+					// Find the line starting from current_pos and get the next position.
+					NewModels::vec2 next_pos;
+					bool found = false;
+					for (const auto& line : Lines[i]) {
+						if (line.first == current_pos && !(line.second == previous_pos)) {
+							next_pos = line.second;
+							found = true;
+							break;
+						}
+						if (line.second == current_pos && !(line.first == previous_pos)) {
+							next_pos = line.first;
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						// Handle error: no outgoing line (assuming valid input forms a loop).
+						break;
+					}
+
+					int next_index = find_index(next_pos);
+					if (next_index < 0 || next_index >= temp.size()) {
+						printf("error");
+					}
+					if (visited[next_index]) {
+						// Back to start: stop without adding the closing duplicate.
+						for (auto e : sector->line) {
+							printf("%.1d", visited[e]);
+						}
+						break;
+					}
+
+					// Add the next index to the sequence.
+					sector->line.push_back(next_index);
+					visited[next_index] = true;
+
+					// Move to the next position.
+					previous_pos = current_pos;
+					current_pos = next_pos;
+				}
+
+				//printf("Exited loop for : #%d\n", i);
+			}
+
 		}
-	};
+		//printf("Sectors calculated;\n");
+
+		for (auto& line : mp->linedefs) {
+			for (int i =0;i<2;i++) {
+				if (line.sidedef[i]!=none) {
+					auto sd = mp->sidedefs[line.sidedef[i]];
+					auto other = line.sidedef[(i+1)%2];
+					NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
+									v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
+
+					if (other == none) {
+						if (sd.middle_texture[0] == '-')
+							continue;
+						auto sector = &map->sectors[sd.sector_tag];
+						auto wall = NewModels::wall{
+						sector->getPointer({v1.x,v1.y}, NewModels::Sector::Ceiling),
+							sector->getPointer({v2.x,v2.y}, NewModels::Sector::Ceiling),
+						sector->getPointer({v2.x,v2.y}, NewModels::Sector::Floor),
+						sector->getPointer({v1.x,v1.y}, NewModels::Sector::Floor),
+							1
+						};
+						sector->walls.push_back(wall);
+					}
+					else {
+						auto sector = &map->sectors[sd.sector_tag];
+						auto other_sector = &map->sectors[mp->sidedefs[other].sector_tag];
+
+						if (sd.upper_texture[0] != '-' && sector->ceil_height> other_sector->ceil_height) {
+							//printf("Upper texture %8s\n", sd.upper_texture);
+							auto wall = NewModels::wall{
+								sector->getPointer({v1.x,v1.y}, NewModels::Sector::Ceiling),
+								sector->getPointer({v2.x,v2.y}, NewModels::Sector::Ceiling),
+								other_sector->getPointer({v2.x,v2.y}, NewModels::Sector::Ceiling),
+								other_sector->getPointer({v1.x,v1.y}, NewModels::Sector::Ceiling),
+									0
+								};
+							sector->walls.push_back(wall);
+						}
+
+						if (sd.middle_texture[0] != '-') {
+							//printf("Middle texture %8s\n", sd.middle_texture);
+							auto sector = &map->sectors[sd.sector_tag];
+							auto wall = NewModels::wall{
+								sector->getPointer({v1.x,v1.y}, NewModels::Sector::Ceiling),
+									sector->getPointer({v2.x,v2.y}, NewModels::Sector::Ceiling),
+								sector->getPointer({v2.x,v2.y}, NewModels::Sector::Floor),
+								sector->getPointer({v1.x,v1.y}, NewModels::Sector::Floor),
+									1
+								};
+							sector->walls.push_back(wall);
+						}
+
+						if (sd.lower_texture[0] != '-') {
+							//printf("Lower texture %8s\n", sd.lower_texture);
+							auto wall = NewModels::wall{
+								other_sector->getPointer({v1.x,v1.y}, NewModels::Sector::Floor),
+								other_sector->getPointer({v2.x,v2.y}, NewModels::Sector::Floor),
+								sector->getPointer({v2.x,v2.y}, NewModels::Sector::Floor),
+								sector->getPointer({v1.x,v1.y}, NewModels::Sector::Floor),
+									2
+								};
+							sector->walls.push_back(wall);
+						}
+					}
+				}
+			}
+
+
+		}
+
+		printf("All Walls calculated;\n");
+	}
+
+	return map;
+}
+
+void Parser::find_sector(int id, NewModels::vec3 vertex) {
+	auto map = generateMap(id);
+	for (int i =0;i<map->sectors.size();i++) {
+		for (auto& floor_p : map->sectors[i].floor) {
+			if (vertex == floor_p)
+				printf("Found sector %4d\n", i);
+		}
+	}
 }
 
 void Parser::obj_export(int id, const char *filepath) {
@@ -187,85 +338,78 @@ void Parser::obj_export(int id, const char *filepath) {
     // Write material library reference
     fprintf(f, "mtllib solids.mtl\n");
 
-    // Store vertices per sector, preserving linedef order
-    std::vector<std::vector<vec3>> sector_vertices(mp->sectors.size());
-    std::unordered_map<vec3, int> vertex_to_index; // Maps vec3 to 1-based OBJ index
-    uint16_t none = static_cast<uint16_t>(-1);
+	auto map = generateMap(id);
 
-    // Collect vertices in linedef order for each sector
-    for (const auto& line : mp->linedefs) {
-        vec3 v1 = { (mp->vertexes[line.v1].x),
-                    (mp->vertexes[line.v1].y), 0};
-        vec3 v2 = { (mp->vertexes[line.v2].x),
-                    (mp->vertexes[line.v2].y), 0};
+	int v_count = 1;
+	std::vector<int> offsets[2] = {std::vector<int>(mp->sectors.size()), std::vector<int>(mp->sectors.size())};
 
-        if (line.sidedef[0] != none) {
-            int s = mp->sidedefs[line.sidedef[0]].sector_tag;
-            sector_vertices[s].push_back(v1);
-            sector_vertices[s].push_back(v2);
-        }
-        if (line.sidedef[1] != none) {
-            int s = mp->sidedefs[line.sidedef[1]].sector_tag;
-            sector_vertices[s].push_back(v1);
-            sector_vertices[s].push_back(v2);
-        }
-    }
+	//Register vertexes
+	for (int i =0; i<map->sectors.size(); i++) {
+		auto sector = &map->sectors[i];
+		offsets[0][i] = v_count;
+		v_count+= sector->floor.size();
+		for (auto& e : sector->floor) {
+			fprintf(f, "v %d %d %d\n", e.x, e.y, e.z);
+		}
+		offsets[1][i] = v_count;
+		for (auto& e : sector->ceiling) {
+			fprintf(f, "v %d %d %d\n", e.x, e.y, e.z);
+		}
+		v_count+= sector->ceiling.size();
+	}
 
-    // Buffers for OBJ output
-    std::string v_floor_buff = "g Floors\nusemtl Red\n";
-    std::string v_ceil_buff = "g Ceils\nusemtl Blue\n";
-    std::string v_floor_line_buff, v_ceil_line_buff;
-    int v_count = 1; // OBJ indices start at 1
+	//draw floors
+	fprintf(f, "\n\ng Ceilings\n usemtl Red \n");
 
-    // Process each sector
-    for (size_t i = 0; i < mp->sectors.size(); ++i) {
-        if (sector_vertices[i].empty()) continue; // Skip empty sectors
+	for (int i =0; i<map->sectors.size(); i++) {
+		auto offset = offsets[0][i];
+		auto sector = &map->sectors[i];
+		std::string out = "f ";
+		for (auto& line: sector->line) {
+			out+= std::to_string(offset+line)+" ";
+		}
+		out += std::to_string(offset+sector->line[0]);
+		fprintf(f,"%s\n", out.c_str());
+	}
 
-        std::unordered_set<vec3> unique_vertices; // Ensure no duplicates in this sector
-        std::string l_buf_floor = "l ";
-        std::string l_buf_ceil = "l ";
+	fprintf(f, "\n\ng Ceilings\n usemtl Green \n");
+	//draw floors
+	for (int i =0; i<map->sectors.size(); i++) {
+		auto offset = offsets[1][i];
+		auto sector = &map->sectors[i];
+		std::string out = "f ";
+		for (auto& line: sector->line) {
+			out+= std::to_string(offset+line)+" ";
+		}
+		out += std::to_string(offset+sector->line[0]);
+		fprintf(f,"%s\n", out.c_str());
+	}
 
-        // Process vertices in order
-        for (const auto& vertex : sector_vertices[i]) {
-            if (unique_vertices.find(vertex) != unique_vertices.end()) continue; // Skip duplicates
-            unique_vertices.insert(vertex);
+	fprintf(f,"\n\n\n");
+	//draw walls
+	std::string low_buff = "g LowWalls \n usemtl Blue\n", high_buff = "g HighWall \n usemtl Purple\n", med_buff = "g MedWall \n usemtl Orange\n";
+	auto offset = v_count;
+	for (int i =0; i<map->sectors.size(); i++) {
+		for (auto& wall : map->sectors[i].walls) {
+			fprintf(f, "v %d %d %d \n", (wall.left_top->x), (wall.left_top->y), (wall.left_top->z));
+			fprintf(f, "v %d %d %d \n", (wall.right_top->x), (wall.right_top->y), (wall.right_top->z));
+			fprintf(f, "v %d %d %d \n", (wall.right_bottom->x), (wall.right_bottom->y), (wall.right_bottom->z));
+			fprintf(f, "v %d %d %d \n", (wall.left_bottom->x), (wall.left_bottom->y), (wall.left_bottom->z));
+			auto buff = "f " + std::to_string(offset) + " " + std::to_string(offset+1) + " "
+					+ std::to_string(offset+2) + " "+ std::to_string(offset+3)+ " "+  std::to_string(offset) + "\n";
+			if (wall.type == 0)
+				low_buff += buff;
+			else if (wall.type == 1)
+				med_buff += buff;
+			else
+				high_buff += buff;
 
-            // Floor vertex
-            vec3 floor_vertex = {vertex.x, vertex.y, (mp->sectors[i].floor_height)};
-            if (vertex_to_index.find(floor_vertex) == vertex_to_index.end()) {
-                vertex_to_index[floor_vertex] = v_count++;
-                v_floor_buff += "v " + std::to_string(floor_vertex.x) + " " +
-                                std::to_string(floor_vertex.y) + " " +
-                                std::to_string(floor_vertex.z) + "\n";
-            }
-            l_buf_floor += std::to_string(vertex_to_index[floor_vertex]) + " ";
-
-            // Ceiling vertex
-            vec3 ceil_vertex = {vertex.x, vertex.y, (mp->sectors[i].ceiling_height)};
-            if (vertex_to_index.find(ceil_vertex) == vertex_to_index.end()) {
-                vertex_to_index[ceil_vertex] = v_count++;
-                v_ceil_buff += "v " + std::to_string(ceil_vertex.x) + " " +
-                               std::to_string(ceil_vertex.y) + " " +
-                               std::to_string(ceil_vertex.z) + "\n";
-            }
-            l_buf_ceil += std::to_string(vertex_to_index[ceil_vertex]) + " ";
-        }
-
-        // Close the loops if there are vertices
-        if (!unique_vertices.empty()) {
-            auto first_vertex = *unique_vertices.begin();
-            l_buf_floor += std::to_string(vertex_to_index[{first_vertex.x, first_vertex.y, mp->sectors[i].floor_height}]) + "\n";
-            l_buf_ceil += std::to_string(vertex_to_index[{first_vertex.x, first_vertex.y, mp->sectors[i].ceiling_height}]) + "\n";
-            v_floor_line_buff += l_buf_floor;
-            v_ceil_line_buff += l_buf_ceil;
-        }
-    }
-
-    // Write buffers to file
-    fprintf(f, "%s", v_floor_buff.c_str());
-    fprintf(f, "%s\n", v_floor_line_buff.c_str());
-    fprintf(f, "%s", v_ceil_buff.c_str());
-    fprintf(f, "%s\n", v_ceil_line_buff.c_str());
+			offset+=4;
+		}
+	}
+	fprintf(f, "%s\n\n", low_buff.c_str());
+	fprintf(f, "%s\n\n", med_buff.c_str());
+	fprintf(f, "%s\n\n", high_buff.c_str());
 
     fflush(f);
     fclose(f);

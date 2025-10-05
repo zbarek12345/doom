@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[]) {
 	Parser parser;
-	char* filename = "../wad/Doom1.WAD";
+	char* filename = "../wad/Doom2.wad";
 	parser.load_file(filename);
 	auto res = parser.get_levels();
 
@@ -23,6 +23,8 @@ int main(int argc, char *argv[]) {
 		throw std::runtime_error("Invalid level id");
 	}
 
-	parser.obj_export(id, "doom_e1m1_sectors_color.obj");
+	parser.obj_export(id, "par.obj");
+	//parser.find_sector(0, {1376, -3360, 8});
+	//parser.find_sector(0, {1376, -3360, -56});
 	return 0;
 }

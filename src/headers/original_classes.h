@@ -42,8 +42,8 @@ namespace original_classes {
 		int16_t x_offset;
 		int16_t y_offset;
 		char upper_texture[8];
-		char middle_texture[8];
 		char lower_texture[8];
+		char middle_texture[8];
 		uint16_t sector_tag;
 	};
 

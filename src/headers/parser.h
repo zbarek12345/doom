@@ -1,6 +1,10 @@
 //
 // Created by Wiktor on 30.05.2025.
 //
+
+#ifndef PARSER_H
+#define PARSER_H
+#include "new_models.h"
 #include <cstdint>
 #include <vector>
 #include <regex.h>
@@ -8,10 +12,6 @@
 #include <string>
 #include <wchar.h>
 #include "game_content.h"
-#ifndef PARSER_H
-#define PARSER_H
-
-
 
 class Parser {
   struct game_data {
@@ -29,6 +29,10 @@ public:
   }
   ///Loads level into parser,
   void load_file(char *file_name);
+
+  NewModels::Map *generateMap(int id);
+
+  void find_sector(int id, NewModels::vec3 vertex);
 
   void obj_export(int id, const char *filepath);
 
