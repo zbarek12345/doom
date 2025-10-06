@@ -4,6 +4,7 @@
 #include "original_classes.h"
 #include <vector>
 
+///Structure storing the original map from the WAD file
 struct original_map{
 	std::string level_name;
 	uint16_t level;

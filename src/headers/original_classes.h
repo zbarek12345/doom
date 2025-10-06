@@ -3,7 +3,9 @@
 
 #include <cstdint>
 
+///Defining structures from a WAD file
 namespace original_classes {
+	//
 	struct header{
 		char file_descriptor[4];
 		uint32_t lump_count;
@@ -14,6 +16,30 @@ namespace original_classes {
 		uint32_t lump_offset;
 		uint32_t lump_size;
 		char lump_name[8];
+	};
+
+	struct rgb {
+		uint8_t r, g, b;
+	};
+
+	struct palette {
+		rgb color[256];
+	};
+
+	struct p_names {
+		std::vector<std::string> name_patch;
+	};
+
+	struct patch {
+		uint16_t width;
+		uint16_t height;
+		uint16_t left_offset;
+		uint16_t top_offset;
+		std::vector<std::vector<uint8_t>> data;
+	};
+
+	struct colormap{
+		uint8_t color_idx[256];
 	};
 
 	struct thing{
@@ -37,8 +63,8 @@ namespace original_classes {
 		uint16_t x_offset;
 		uint16_t y_offset;
 		char upper_texture[8];
-		char middle_texture[8];
 		char lower_texture[8];
+		char middle_texture[8];
 		uint16_t sector_tag;
 	};
 
@@ -77,6 +103,8 @@ namespace original_classes {
 		uint16_t type;
 		uint16_t tag_no;
 	};
+
+
 };
 
 
