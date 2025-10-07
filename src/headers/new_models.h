@@ -7,6 +7,7 @@
 #include<vector>
 #include<stdint.h>
 #include <algorithm>
+#include <gl/gl.h>
 
 namespace NewModels{
 	struct vec3 {
@@ -70,11 +71,90 @@ namespace NewModels{
 			}
 			return res;
 		}
+
+		inline void Render() {
+			///draw ceils
+			glColor3ub(0,255,0);
+			glBegin(GL_POLYGON);
+			for (auto& point: line) {
+				auto p = ceiling[point];
+				glVertex3s(p.x, p.z, -p.y);
+			}
+			glEnd();
+			///draw floors
+			glColor3ub(255,0,0);
+			glBegin(GL_POLYGON);
+			for (auto& point: line) {
+				auto p = floor[point];
+				glVertex3s(p.x, p.z, -p.y);
+			}
+			glEnd();
+
+			///Draw walls
+			for (auto& wall: walls) {
+				if (wall.type == 0)
+					glColor3ub(0, 188, 209);
+				else if (wall.type==1)
+					glColor3ub(186, 58, 11);
+				else
+					glColor3ub(235, 73, 183);
+
+				glBegin(GL_QUADS);
+					glVertex3s(wall.left_top->x, wall.left_top->z, -wall.left_top->y);
+					glVertex3s(wall.right_top->x, wall.right_top->z, -wall.right_top->y);
+					glVertex3s(wall.right_bottom->x, wall.right_bottom->z, -wall.right_bottom->y);
+					glVertex3s(wall.left_bottom->x, wall.left_bottom->z, -wall.left_bottom->y);
+				glEnd();
+			}
+
+
+			//draw lines
+			glLineWidth(4);
+			glColor3ub(255, 255, 255);
+
+			//ceiling
+			glBegin(GL_LINE_STRIP);
+			for (auto& point: line) {
+				auto p = ceiling[point];
+				glVertex3s(p.x, p.z, p.y);
+			}
+			auto p = ceiling[line[0]];
+			glVertex3d(p.x, p.z, p.y);
+			glEnd();
+
+			//floor
+			glBegin(GL_LINE_STRIP);
+			for (auto& point: line) {
+				auto p = floor[point];
+				glVertex3s(p.x, p.z, p.y);
+			}
+			p = floor[line[0]];
+			glVertex3d(p.x, p.z, p.y);
+			glEnd();
+
+			//Walls
+			for (auto& wall: walls) {
+				glBegin(GL_LINE_STRIP);
+					glVertex3s(wall.left_top->x, wall.left_top->z, wall.left_top->y);
+					glVertex3s(wall.right_top->x, wall.right_top->z, wall.right_top->y);
+					glVertex3s(wall.right_bottom->x, wall.right_bottom->z, wall.right_bottom->y);
+					glVertex3s(wall.left_bottom->x, wall.left_bottom->z, wall.left_bottom->y);
+					glVertex3s(wall.left_top->x, wall.left_top->z, wall.left_top->y);
+				glEnd();
+			}
+		}
     };
 
     class Map{
       public:
         std::vector<Sector> sectors;
+		vec3 player_start;
+
+      void render() {
+	      for (auto& sector : sectors) {
+		      sector.Render();
+	      }
+      }
     };
 };
 #endif //NEW_MODELS_H

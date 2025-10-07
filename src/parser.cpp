@@ -141,7 +141,9 @@ cleanup:
 }
 
 NewModels::Map* Parser::generateMap(int id) {
+
 	auto* mp = content->maps[id];
+	printf("Linedef no. %d\n Vertex no. %d\n", mp->linedefs.size(), mp->vertexes.size());
 	auto map = new NewModels::Map();
 	{
 		std::vector<std::set<NewModels::vec2> >Nodes(mp->sectors.size());
@@ -153,6 +155,8 @@ NewModels::Map* Parser::generateMap(int id) {
 					NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 									v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 					auto sector= mp->sidedefs[line.sidedef[i]].sector_tag;
+					if (sector == 37)
+						printf("Line from %d %d -> %d %d \n", v1.x, v1.y, v2.x, v2.y);
 					Nodes[sector].insert(v1);
 					Nodes[sector].insert(v2);
 					Lines[sector].emplace_back(std::make_pair(v1,v2));
@@ -164,7 +168,7 @@ NewModels::Map* Parser::generateMap(int id) {
 
 		map->sectors = std::vector<NewModels::Sector>(mp->sectors.size());
 		for ( int i = 0; i < mp->sectors.size(); i++ ) {
-			printf("Calculating sector #%d;\n", i);
+			//printf("Calculating sector #%d;\n", i);
 			auto sector = &map->sectors[i];
 
 			sector->floor_height = mp->sectors[i].floor_height;
@@ -199,6 +203,8 @@ NewModels::Map* Parser::generateMap(int id) {
 				visited[original_start] = true;
 
 				while (true) {
+					if (current_pos == NewModels::vec2{928, -3392})
+						printf("Found sector %4d\n", i);
 					// Find the line starting from current_pos and get the next position.
 					NewModels::vec2 next_pos;
 					bool found = false;
@@ -225,9 +231,6 @@ NewModels::Map* Parser::generateMap(int id) {
 					}
 					if (visited[next_index]) {
 						// Back to start: stop without adding the closing duplicate.
-						for (auto e : sector->line) {
-							printf("%.1d", visited[e]);
-						}
 						break;
 					}
 
@@ -317,6 +320,13 @@ NewModels::Map* Parser::generateMap(int id) {
 		printf("All Walls calculated;\n");
 	}
 
+
+	for (auto& thing : mp->things) {
+		if (thing.type == 1) {
+			map->player_start = {thing.x,thing.y, 0};
+			break;
+		}
+	}
 	return map;
 }
 
