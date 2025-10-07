@@ -3,7 +3,7 @@
 //
 
 #include "headers/parser.h"
-
+#include "headers/CircuitFinder.h"
 #include <algorithm>
 #include <stdexcept>
 #include <cstring>
@@ -143,7 +143,7 @@ cleanup:
 NewModels::Map* Parser::generateMap(int id) {
 
 	auto* mp = content->maps[id];
-	printf("Linedef no. %d\n Vertex no. %d\n", mp->linedefs.size(), mp->vertexes.size());
+	printf("Linedef no. %llu\n Vertex no. %llu\n", mp->linedefs.size(), mp->vertexes.size());
 	auto map = new NewModels::Map();
 	{
 		std::vector<std::set<NewModels::vec2> >Nodes(mp->sectors.size());
@@ -192,65 +192,28 @@ NewModels::Map* Parser::generateMap(int id) {
 					return -1;
 				};
 
-				std::vector<bool> visited(temp.size(), false);
-				while (!Lines[i].empty()) {
-					std::vector<uint16_t> line;
-					// Start with the first line's starting point.
-					NewModels::vec2 start_pos = Lines[i][0].first;
-					uint16_t original_start = find_index(start_pos);
-					NewModels::vec2 current_pos = start_pos;
-					NewModels::vec2 previous_pos = {-100, -100};
-					// Add the starting index.
-					line.push_back(original_start);
-					visited[original_start] = true;
-					while (true) {
-						if (current_pos == NewModels::vec2{928, -3392})
-							printf("Found sector %4d\n", i);
-						// Find the line starting from current_pos and get the next position.
-						NewModels::vec2 next_pos;
-						bool found = false;
-						for (const auto& line : Lines[i]) {
-							if (line.first == current_pos && !(line.second == previous_pos)) {
-								next_pos = line.second;
-								found = true;
-								auto id = std::find(Lines[i].begin(), Lines[i].end(), std::make_pair(line.first, line.second));
-								if (id != Lines[i].end())
-									Lines[i].erase(id);
-								break;
-							}
-							if (line.second == current_pos && !(line.first == previous_pos)) {
-								next_pos = line.first;
-								found = true;
-								auto id = std::find(Lines[i].begin(), Lines[i].end(), std::make_pair(line.second, line.first));
-								if (id != Lines[i].end())
-									Lines[i].erase(id);
-								break;
-							}
-						}
-						if (!found) {
-							// Handle error: no outgoing line (assuming valid input forms a loop).
-							break;
-						}
+				int max_val = -1;
+				std::vector<std::pair<int, int> > edges;
+				for (auto& line : Lines[i]) {
+					auto p1 = find_index(line.first);
+					auto p2 = find_index(line.second);
 
-						int next_index = find_index(next_pos);
-						if (next_index < 0 || next_index >= temp.size()) {
-							printf("error");
-						}
-						if (visited[next_index]) {
-							// Back to start: stop without adding the closing duplicate.
-							break;
-						}
-
-						// Add the next index to the sequence.
-						line.push_back(next_index);
-						visited[next_index] = true;
-
-						// Move to the next position.
-						previous_pos = current_pos;
-						current_pos = next_pos;
+					max_val = std::max(max_val, std::max(p1, p2));
+					if (p1 != -1 && p2 != -1) {
+						edges.emplace_back(p1, p2);
 					}
-					sector->lines.push_back(line);
 				}
+
+				CircuitFinder cf = CircuitFinder(max_val, edges);
+				auto res = cf.run();
+				for (auto& e : res) {
+					std::vector<uint16_t> ln;
+					for (auto& p : e) {
+						ln.push_back(p);
+					}
+					sector->lines.push_back(ln);
+				}
+
 				//printf("Exited loop for : #%d\n", i);
 			}
 

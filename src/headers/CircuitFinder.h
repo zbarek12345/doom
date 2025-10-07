@@ -8,7 +8,6 @@
 
 typedef std::list<int> NodeList;
 
-template<int N>
 class CircuitFinder
 {
   std::vector<NodeList> AK;
@@ -16,38 +15,40 @@ class CircuitFinder
   std::vector<bool> Blocked;
   std::vector<NodeList> B;
   std::vector<std::vector<int>> output_list;
-  int S;
+  int S{};
+  int N;
 
   void unblock(int U);
   bool circuit(int V);
   void output();
 
 public:
-  CircuitFinder(int Array[N][N])
-    : AK(N), Blocked(N), B(N) {
-    for (int I = 0; I < N; ++I) {
-      for (int J = 0; J < N; ++J) {
-        if (Array[I][J]) {
-          AK[I].push_back(Array[I][J]);
-        }
-      }
-    }
-  }
+  // CircuitFinder(int N, int Array[N][])
+  //   : AK(N), Blocked(N), B(N) {
+  //   for (int I = 0; I < N; ++I) {
+  //     for (int J = 0; J < N; ++J) {
+  //       if (Array[I][J]) {
+  //         AK[I].push_back(Array[I][J]);
+  //       }
+  //     }
+  //   }
+  //   this->N = N;
+  // }
 
-  CircuitFinder(std::vector<std::pair<int, int>> Array)
-  : AK(N), Blocked(N), B(N) {
+  CircuitFinder(int N, std::vector<std::pair<int, int>> Array)
+    : AK(N), Blocked(N), B(N), S(0) {
     for (int I = 0; I < N; ++I) {
-       AK[Array[I].first].push_back(Array[I].second);
-       AK[Array[I].second].push_back(Array[I].first);
+      AK[Array[I].first].push_back(Array[I].second);
+      AK[Array[I].second].push_back(Array[I].first);
     }
+    this->N = N;
   }
 
 
   std::vector<std::vector<int>>& run();
 };
 
-template<int N>
-void CircuitFinder<N>::unblock(int U)
+inline void CircuitFinder::unblock(int U)
 {
   Blocked[U - 1] = false;
 
@@ -61,8 +62,7 @@ void CircuitFinder<N>::unblock(int U)
   }
 }
 
-template<int N>
-bool CircuitFinder<N>::circuit(int V)
+inline bool CircuitFinder::circuit(int V)
 {
   bool F = false;
   Stack.push_back(V);
@@ -92,8 +92,7 @@ bool CircuitFinder<N>::circuit(int V)
   return F;
 }
 
-template<int N>
-void CircuitFinder<N>::output()
+inline void CircuitFinder::output()
 {
 //  std::cout << "circuit: ";
 //  for (auto I = Stack.begin(), E = Stack.end(); I != E; ++I) {
@@ -107,8 +106,7 @@ void CircuitFinder<N>::output()
     output_list.push_back(temp);
 }
 
-template<int N>
-std::vector<std::vector<int>>& CircuitFinder<N>::run()
+inline std::vector<std::vector<int>>& CircuitFinder::run()
 {
   Stack.clear();
   S = 1;

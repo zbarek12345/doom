@@ -44,13 +44,20 @@ namespace NewModels{
 
 	class Sector{
 	public:
-        int id;
-		int16_t ceil_height, floor_height;
+        int id{};
+		int16_t ceil_height{}, floor_height{};
     	std::vector<vec3> ceiling;
         std::vector<vec3> floor;
 		std::vector<std::vector<uint16_t>> lines;
 
         std::vector<wall> walls;
+
+		Sector() {
+			lines = std::vector<std::vector<uint16_t>>();
+			ceiling = std::vector<vec3>();
+			floor = std::vector<vec3>();
+			walls = std::vector<wall>();
+		}
 
 		enum type {
 			Ceiling,
@@ -153,6 +160,11 @@ namespace NewModels{
       public:
         std::vector<Sector> sectors;
 		vec3 player_start;
+
+      Map() {
+	    sectors = std::vector<Sector>();
+      	player_start = {0,0,0};
+      }
 
       void render() {
 	      for (auto& sector : sectors) {
