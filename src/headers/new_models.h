@@ -48,7 +48,7 @@ namespace NewModels{
 		int16_t ceil_height, floor_height;
     	std::vector<vec3> ceiling;
         std::vector<vec3> floor;
-		std::vector<uint16_t> line;
+		std::vector<std::vector<uint16_t>> lines;
 
         std::vector<wall> walls;
 
@@ -75,20 +75,26 @@ namespace NewModels{
 		inline void Render() {
 			///draw ceils
 			glColor3ub(0,255,0);
-			glBegin(GL_POLYGON);
-			for (auto& point: line) {
-				auto p = ceiling[point];
-				glVertex3s(p.x, p.z, -p.y);
+			for (auto& line: lines) {
+				glBegin(GL_POLYGON);
+				for (auto& point: line) {
+					auto p = ceiling[point];
+					glVertex3s(p.x, p.z, -p.y);
+				}
+				glEnd();
 			}
-			glEnd();
+
 			///draw floors
 			glColor3ub(255,0,0);
-			glBegin(GL_POLYGON);
-			for (auto& point: line) {
-				auto p = floor[point];
-				glVertex3s(p.x, p.z, -p.y);
+			for (auto& line: lines) {
+				glBegin(GL_POLYGON);
+				for (auto& point: line) {
+					auto p = ceiling[point];
+					glVertex3s(p.x, p.z, -p.y);
+				}
+				glEnd();
 			}
-			glEnd();
+
 
 			///Draw walls
 			for (auto& wall: walls) {
@@ -113,25 +119,23 @@ namespace NewModels{
 			glColor3ub(255, 255, 255);
 
 			//ceiling
-			glBegin(GL_LINE_STRIP);
-			for (auto& point: line) {
-				auto p = ceiling[point];
-				glVertex3s(p.x, p.z, p.y);
+			for (auto& line: lines) {
+				glBegin(GL_LINE_STRIP);
+				for (auto& point: line) {
+					auto p = ceiling[point];
+					glVertex3s(p.x, p.z, -p.y);
+				}
+				glEnd();
 			}
-			auto p = ceiling[line[0]];
-			glVertex3d(p.x, p.z, p.y);
-			glEnd();
-
 			//floor
-			glBegin(GL_LINE_STRIP);
-			for (auto& point: line) {
-				auto p = floor[point];
-				glVertex3s(p.x, p.z, p.y);
+			for (auto& line: lines) {
+				glBegin(GL_LINE_STRIP);
+				for (auto& point: line) {
+					auto p = ceiling[point];
+					glVertex3s(p.x, p.z, -p.y);
+				}
+				glEnd();
 			}
-			p = floor[line[0]];
-			glVertex3d(p.x, p.z, p.y);
-			glEnd();
-
 			//Walls
 			for (auto& wall: walls) {
 				glBegin(GL_LINE_STRIP);

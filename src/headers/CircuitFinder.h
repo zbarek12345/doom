@@ -15,6 +15,7 @@ class CircuitFinder
   std::vector<int> Stack;
   std::vector<bool> Blocked;
   std::vector<NodeList> B;
+  std::vector<std::vector<int>> output_list;
   int S;
 
   void unblock(int U);
@@ -33,15 +34,16 @@ public:
     }
   }
 
-  CircuitFinder(std::vector<std::vector<int>> Array)
+  CircuitFinder(std::vector<std::pair<int, int>> Array)
   : AK(N), Blocked(N), B(N) {
     for (int I = 0; I < N; ++I) {
-       AK[I].emplace_back(Array[I].begin(), Array[I].end());
+       AK[Array[I].first].push_back(Array[I].second);
+       AK[Array[I].second].push_back(Array[I].first);
     }
   }
 
 
-  void run();
+  std::vector<std::vector<int>>& run();
 };
 
 template<int N>
@@ -93,15 +95,20 @@ bool CircuitFinder<N>::circuit(int V)
 template<int N>
 void CircuitFinder<N>::output()
 {
-  std::cout << "circuit: ";
-  for (auto I = Stack.begin(), E = Stack.end(); I != E; ++I) {
-    std::cout << *I << " -> ";
-  }
-  std::cout << *Stack.begin() << std::endl;
+//  std::cout << "circuit: ";
+//  for (auto I = Stack.begin(), E = Stack.end(); I != E; ++I) {
+//    std::cout << *I << " -> ";
+//  }
+//  std::cout << *Stack.begin() << std::endl;
+    std::vector<int> temp;
+    for (auto I = Stack.begin(), E = Stack.end(); I != E; ++I) {
+        temp.push_back(*I);
+    }
+    output_list.push_back(temp);
 }
 
 template<int N>
-void CircuitFinder<N>::run()
+std::vector<std::vector<int>>& CircuitFinder<N>::run()
 {
   Stack.clear();
   S = 1;
@@ -114,6 +121,8 @@ void CircuitFinder<N>::run()
     circuit(S);
     ++S;
   }
+
+  return output_list;
 }
 
 #endif // CIRCUIT_FINDER_H

@@ -192,57 +192,65 @@ NewModels::Map* Parser::generateMap(int id) {
 					return -1;
 				};
 
-				// Start with the first line's starting point.
-				NewModels::vec2 start_pos = Lines[i][0].first;
-				int original_start = find_index(start_pos);
-				NewModels::vec2 current_pos = start_pos;
-				NewModels::vec2 previous_pos = {-100, -100};
-				// Add the starting index.
-				sector->line.push_back(original_start);
 				std::vector<bool> visited(temp.size(), false);
-				visited[original_start] = true;
-
-				while (true) {
-					if (current_pos == NewModels::vec2{928, -3392})
-						printf("Found sector %4d\n", i);
-					// Find the line starting from current_pos and get the next position.
-					NewModels::vec2 next_pos;
-					bool found = false;
-					for (const auto& line : Lines[i]) {
-						if (line.first == current_pos && !(line.second == previous_pos)) {
-							next_pos = line.second;
-							found = true;
+				while (!Lines[i].empty()) {
+					std::vector<uint16_t> line;
+					// Start with the first line's starting point.
+					NewModels::vec2 start_pos = Lines[i][0].first;
+					uint16_t original_start = find_index(start_pos);
+					NewModels::vec2 current_pos = start_pos;
+					NewModels::vec2 previous_pos = {-100, -100};
+					// Add the starting index.
+					line.push_back(original_start);
+					visited[original_start] = true;
+					while (true) {
+						if (current_pos == NewModels::vec2{928, -3392})
+							printf("Found sector %4d\n", i);
+						// Find the line starting from current_pos and get the next position.
+						NewModels::vec2 next_pos;
+						bool found = false;
+						for (const auto& line : Lines[i]) {
+							if (line.first == current_pos && !(line.second == previous_pos)) {
+								next_pos = line.second;
+								found = true;
+								auto id = std::find(Lines[i].begin(), Lines[i].end(), std::make_pair(line.first, line.second));
+								if (id != Lines[i].end())
+									Lines[i].erase(id);
+								break;
+							}
+							if (line.second == current_pos && !(line.first == previous_pos)) {
+								next_pos = line.first;
+								found = true;
+								auto id = std::find(Lines[i].begin(), Lines[i].end(), std::make_pair(line.second, line.first));
+								if (id != Lines[i].end())
+									Lines[i].erase(id);
+								break;
+							}
+						}
+						if (!found) {
+							// Handle error: no outgoing line (assuming valid input forms a loop).
 							break;
 						}
-						if (line.second == current_pos && !(line.first == previous_pos)) {
-							next_pos = line.first;
-							found = true;
+
+						int next_index = find_index(next_pos);
+						if (next_index < 0 || next_index >= temp.size()) {
+							printf("error");
+						}
+						if (visited[next_index]) {
+							// Back to start: stop without adding the closing duplicate.
 							break;
 						}
-					}
-					if (!found) {
-						// Handle error: no outgoing line (assuming valid input forms a loop).
-						break;
-					}
 
-					int next_index = find_index(next_pos);
-					if (next_index < 0 || next_index >= temp.size()) {
-						printf("error");
-					}
-					if (visited[next_index]) {
-						// Back to start: stop without adding the closing duplicate.
-						break;
-					}
+						// Add the next index to the sequence.
+						line.push_back(next_index);
+						visited[next_index] = true;
 
-					// Add the next index to the sequence.
-					sector->line.push_back(next_index);
-					visited[next_index] = true;
-
-					// Move to the next position.
-					previous_pos = current_pos;
-					current_pos = next_pos;
+						// Move to the next position.
+						previous_pos = current_pos;
+						current_pos = next_pos;
+					}
+					sector->lines.push_back(line);
 				}
-
 				//printf("Exited loop for : #%d\n", i);
 			}
 
@@ -374,12 +382,14 @@ void Parser::obj_export(int id, const char *filepath) {
 	for (int i =0; i<map->sectors.size(); i++) {
 		auto offset = offsets[0][i];
 		auto sector = &map->sectors[i];
-		std::string out = "f ";
-		for (auto& line: sector->line) {
-			out+= std::to_string(offset+line)+" ";
+		for (auto& line : sector->lines) {
+			std::string out = "f ";
+			for (auto& point: line) {
+				out+= std::to_string(offset+point)+" ";
+			}
+			out += std::to_string(offset+line[0]);
+			fprintf(f,"%s\n", out.c_str());
 		}
-		out += std::to_string(offset+sector->line[0]);
-		fprintf(f,"%s\n", out.c_str());
 	}
 
 	fprintf(f, "\n\ng Ceilings\n usemtl Green \n");
@@ -387,12 +397,14 @@ void Parser::obj_export(int id, const char *filepath) {
 	for (int i =0; i<map->sectors.size(); i++) {
 		auto offset = offsets[1][i];
 		auto sector = &map->sectors[i];
-		std::string out = "f ";
-		for (auto& line: sector->line) {
-			out+= std::to_string(offset+line)+" ";
+		for (auto& line : sector->lines) {
+			std::string out = "f ";
+			for (auto& point: line) {
+				out+= std::to_string(offset+point)+" ";
+			}
+			out += std::to_string(offset+line[0]);
+			fprintf(f,"%s\n", out.c_str());
 		}
-		out += std::to_string(offset+sector->line[0]);
-		fprintf(f,"%s\n", out.c_str());
 	}
 
 	fprintf(f,"\n\n\n");
