@@ -8,7 +8,8 @@ sdl2 = dependency('sdl2')
 sdl2_main = dependency('sdl2')
 
 doom = executable('doom',
-                  ['src/parser.cpp', 'src/Game.cpp','src/Camera.cpp','src/Player.cpp', 'main.cpp'],
+                  ['src/parser.cpp', 'src/Game.cpp','src/Camera.cpp','src/Player.cpp','src/CircuitFinder.cpp','src/SurfaceCalculator.cpp'
+                   , 'main.cpp'],
                   dependencies: [sdl2,sdl2_main,gl, regex],
                   link_args:['-mwindows'],
                   install : true)

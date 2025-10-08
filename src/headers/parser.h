@@ -32,6 +32,8 @@ public:
 
   NewModels::Map *generateMap(int id);
 
+  void testExport(int id, const char *filepath);
+
   void find_sector(int id, NewModels::vec3 vertex);
 
   void obj_export(int id, const char *filepath);

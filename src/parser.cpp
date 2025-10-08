@@ -12,6 +12,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "headers/SurfaceCalculator.h"
+
 
 ///Helper function to compare the lump names
 bool compareLumpName(const char* lump1, const char* lump2) {
@@ -155,8 +157,6 @@ NewModels::Map* Parser::generateMap(int id) {
 					NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 									v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 					auto sector= mp->sidedefs[line.sidedef[i]].sector_tag;
-					if (sector == 37)
-						printf("Line from %d %d -> %d %d \n", v1.x, v1.y, v2.x, v2.y);
 					Nodes[sector].insert(v1);
 					Nodes[sector].insert(v2);
 					Lines[sector].emplace_back(std::make_pair(v1,v2));
@@ -164,11 +164,11 @@ NewModels::Map* Parser::generateMap(int id) {
 			}
 		}
 
-		printf("Lines loaded;\n");
+		//printf("Lines loaded;\n");
 
 		map->sectors = std::vector<NewModels::Sector>(mp->sectors.size());
 		for ( int i = 0; i < mp->sectors.size(); i++ ) {
-			//printf("Calculating sector #%d;\n", i);
+			printf("Calculating sector #%d;\n", i);
 			auto sector = &map->sectors[i];
 
 			sector->floor_height = mp->sectors[i].floor_height;
@@ -192,29 +192,28 @@ NewModels::Map* Parser::generateMap(int id) {
 					return -1;
 				};
 
+				//printf("Trying to find indexes for %d\n", i);
 				int max_val = -1;
-				std::vector<std::pair<int, int> > edges;
+				std::vector<std::pair<uint16_t, uint16_t> > edges;
 				for (auto& line : Lines[i]) {
 					auto p1 = find_index(line.first);
 					auto p2 = find_index(line.second);
 
+					//printf("Line %d %d\n", p1, p2);
 					max_val = std::max(max_val, std::max(p1, p2));
 					if (p1 != -1 && p2 != -1) {
 						edges.emplace_back(p1, p2);
 					}
 				}
 
-				CircuitFinder cf = CircuitFinder(max_val, edges);
-				auto res = cf.run();
-				for (auto& e : res) {
-					std::vector<uint16_t> ln;
-					for (auto& p : e) {
-						ln.push_back(p);
-					}
-					sector->lines.push_back(ln);
-				}
+				auto cf = CircuitFinder(max_val+1, edges);
+				cf.Calculate();
+				sector->lines  = cf.GetLines();
 
-				//printf("Exited loop for : #%d\n", i);
+				// auto sc = SurfaceCalculator(&ls_start, &Nodes[i]);
+				//
+				// sector->lines = sc.Calculate();
+				//printf("Lines calculated;\n");
 			}
 
 		}
@@ -299,6 +298,73 @@ NewModels::Map* Parser::generateMap(int id) {
 		}
 	}
 	return map;
+}
+
+void Parser::testExport(int id, const char *filepath) {
+	auto mp = content->maps[id];
+
+	std::vector<std::pair<NewModels::vec2, NewModels::vec2> > vertices;
+	std::vector<std::pair<NewModels::vec2, NewModels::vec2> > lefts;
+	std::vector<std::pair<NewModels::vec2, NewModels::vec2> > rights;
+
+	for (auto &line: mp->linedefs) {
+		uint16_t none = 0xFFFF;
+		NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
+		v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
+
+		vertices.push_back(std::make_pair(v1,v2));
+
+		if (line.sidedef[0]!=none) {
+			auto sd = mp->sidedefs[line.sidedef[0]];
+			if (sd.middle_texture[0] != '-')
+				printf("%.8s\n", sd.middle_texture);
+			if (sd.lower_texture[0] != '-')
+				printf("%.8s\n", sd.lower_texture);
+			if (sd.upper_texture[0] != '-')
+				printf("%.8s\n", sd.upper_texture);
+
+		}
+		if (line.sidedef[1]!=none) {
+			auto sd = mp->sidedefs[line.sidedef[1]];
+			if (sd.middle_texture[0] != '-')
+				printf("%.8s\n", sd.middle_texture);
+			if (sd.lower_texture[0] != '-')
+				printf("%.8s\n", sd.lower_texture);
+			if (sd.upper_texture[0] != '-')
+				printf("%.8s\n", sd.upper_texture);
+		}
+	}
+	FILE *f = fopen(filepath, "w");
+	if (!f) return;
+
+	fprintf(f, "mtllib solids.mtl\n");
+
+	int dot_count = 1;
+	for (auto &pair: vertices) {
+		fprintf(f, "v %d %d 0\n", pair.first.x, pair.first.y); // left dot
+		fprintf(f, "v %d %d 0\n", pair.second.x, pair.second.y); // right dot
+		fprintf(f, "l %d %d\n", dot_count, dot_count + 1); // line between the dots
+		dot_count += 2;
+	}
+
+	// fprintf(f, "\n\n g Lefts\n usemtl Red\n");
+	// for (auto &pair: lefts) {
+	// 	fprintf(f, "v %d %d 0\n", pair.first.x, pair.first.y); // left dot
+	// 	fprintf(f, "v %d %d 0\n", pair.second.x, pair.second.y); // right dot
+	// 	fprintf(f, "l %d %d\n", dot_count, dot_count + 1); // line between the dots
+	// 	dot_count += 2;
+	// }
+	//
+	// fprintf(f, "\n\ng Lefts\n usemtl Blues\n");
+	// for (auto &pair: rights) {
+	// 	fprintf(f, "v %d %d 0\n", pair.first.x, pair.first.y); // left dot
+	// 	fprintf(f, "v %d %d 0\n", pair.second.x, pair.second.y); // right dot
+	// 	fprintf(f, "l %d %d\n", dot_count, dot_count + 1); // line between the dots
+	// 	dot_count += 2;
+	// }
+
+	fflush(f);
+	fclose(f);
 }
 
 void Parser::find_sector(int id, NewModels::vec3 vertex) {

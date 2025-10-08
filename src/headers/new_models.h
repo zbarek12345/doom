@@ -162,7 +162,7 @@ namespace NewModels{
 		vec3 player_start;
 
       Map() {
-	    sectors = std::vector<Sector>();
+      	sectors = std::vector<Sector>();
       	player_start = {0,0,0};
       }
 
