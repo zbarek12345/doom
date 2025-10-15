@@ -12,7 +12,7 @@ void Camera::HandleEvent(SDL_Event* event, double deltaTime) {
     if (event->type == SDL_MOUSEMOTION) {
         yaw -= event->motion.xrel * mouse_sensitivity * deltaTime * 60.0f;
         pitch -= event->motion.yrel * mouse_sensitivity * deltaTime * 60.0f;
-        yaw = fmod(yaw, 360.0f);
+        yaw = fmod(yaw+360.0f, 360.0f);
         if (pitch > 89.0f) pitch = 89.0f;
         if (pitch < -89.0f) pitch = -89.0f;
     }

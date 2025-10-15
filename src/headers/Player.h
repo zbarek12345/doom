@@ -13,9 +13,11 @@ public:
    void Render();
 
 private:
-   NewModels::vec3 position; // Short for map compatibility
+   NewModels::vec3 position{}; // Short for map compatibility
    float pos_x, pos_y, pos_z; // Float for smooth movement
    Camera* camera;
+   original_map * map;
+   NewModels::Sector * current_sector;
 };
 
 #endif

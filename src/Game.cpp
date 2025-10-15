@@ -66,8 +66,9 @@ void Game::SelectMap(int id) {
     if (current_map && current_map->player_start.x != 0 && current_map->player_start.y != 0) {
         // Start above the floor (assuming z is height)
         NewModels::vec3 start_pos = current_map->player_start;
-        start_pos.z += 128; // Adjust based on typical sector height
-        player = new Player(start_pos, 90.0f); // Match map's angle if available
+        printf("Player start: %f, %f, %f\nAngle: %d", start_pos.x, start_pos.y, start_pos.z, current_map->player_start_angle);
+        start_pos.z += 10; // Adjust based on typical sector height
+        player = new Player(start_pos, current_map->player_start_angle); // Match map's angle if available
     } else {
         std::cerr << "No valid player start found for map " << id << std::endl;
         player = new Player({0, 0, 128}, 90.0f); // Fallback
@@ -78,6 +79,9 @@ void Game::Run() {
     bool running = true;
     SDL_Event event;
     double deltaTime = 0.0;
+    double fps = 60.0f;
+    double fps_time = 1.0f/fps;
+    double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();
     SDL_SetRelativeMouseMode(SDL_TRUE);
     while (running) {
@@ -85,7 +89,9 @@ void Game::Run() {
             if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
                 running = false;
             }
-            if (player) player->HandleEvent(&event, deltaTime);
+            if (player) {
+                player->HandleEvent(&event, deltaTime);
+            }
         }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -114,8 +120,12 @@ void Game::Run() {
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
-        if (player) player->Render();
-        if (current_map) current_map->render();
+
+        if (render_time>fps_time) {
+            if (player) player->Render();
+            if (current_map) current_map->render();
+            render_time = fmod(render_time, fps_time);
+        }
 
         SDL_GL_SwapWindow(window);
         err = glGetError();
@@ -123,8 +133,10 @@ void Game::Run() {
             std::cerr << "OpenGL error after SDL_GL_SwapWindow: " << err << std::endl;
         }
 
+
         auto now = SDL_GetTicks();
         deltaTime = (now - lastTime) / 1000.0;
+        render_time += deltaTime;
         lastTime = now;
     }
 }
