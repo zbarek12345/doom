@@ -90,52 +90,6 @@ namespace NewModels{
 			return res;
 		}
 
-		bool calculateDistance(vec2 pos, int id){
-			auto it = outer_edges.begin();
-
-			auto line = *it;
-
-			auto min_edge = outer_edges.begin();
-			double min_distance = std::numeric_limits<double>::max();
-			for (auto it = outer_edges.begin(); it != outer_edges.end(); ++it) {
-				auto &edge = *it;
-
-				vec2 start, end;
-
-				start = vec2{ceiling[(uint16_t)edge.v1()].x, ceiling[(uint16_t)edge.v1()].y};
-				end = vec2{ceiling[(uint16_t)edge.v2()].x, ceiling[(uint16_t)edge.v2()].y};
-
-				// Calculate the distance from pos to the line segment
-				vec2 line_vec{(int16_t) (end.x - start.x), (int16_t) (end.y - start.y)};
-				vec2 point_vec{(int16_t) (pos.x - start.x), (int16_t) (pos.y - start.y)};
-
-				double dot = line_vec.x * point_vec.x + line_vec.y * point_vec.y;
-				double length_sq = line_vec.x * line_vec.x + line_vec.y * line_vec.y;
-				double t = (length_sq == 0) ? 0 : dot / length_sq;
-
-				t = std::max(0.0, std::min(1.0, t));
-
-				vec2 projection{
-					(int16_t) (start.x + t * line_vec.x),
-					(int16_t) (start.y + t * line_vec.y)
-				};
-
-				double distance = std::sqrt(
-					(projection.x - pos.x) * (projection.x - pos.x) +
-					(projection.y - pos.y) * (projection.y - pos.y)
-				);
-
-				if (min_distance>distance) {
-					min_distance = distance;
-					min_edge = it;
-				}
-			}
-
-			auto p1 = it->v1(), p2 = it->v2();
-
-
-
-		}
 
 		bool isInTriangle(vec2 pos, triangle& t) {
 			bool isInside = false;
@@ -156,7 +110,7 @@ namespace NewModels{
 			auto cp2 = v2v3.x*tv2.y - v2v3.y*tv2.x;
 			auto cp3 = v3v1.x*tv3.y - v3v1.y*tv3.x;
 
-			if (cp1 >= 0 && cp2 >= 0 && cp3 >= 0 || cp1 <= 0 && cp2 <= 0 && cp3 <= 0)
+			if ((cp1 >= 0 && cp2 >= 0 && cp3 >= 0 )||( cp1 <= 0 && cp2 <= 0 && cp3 <= 0))
 				isInside = true;
 			return isInside;
 		}
@@ -165,14 +119,16 @@ namespace NewModels{
 			if (pos.x>bounding_box[1].x || pos.x<bounding_box[0].x || pos.y>bounding_box[1].y || pos.y<bounding_box[0].y)
 				return false;
 
-			// for (auto& line: lines) {
-			// 	if (isInTriangle(pos, line))
-			// 		return true;
-			// }
+			for (auto& line: lines) {
+				if (isInTriangle(pos, line))
+					return true;
+			}
 			return true;
 		}
 
 		inline void Render() {
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_BACK);
 			///draw ceils
 			glColor3ub(0,255,0);
 
@@ -189,7 +145,7 @@ namespace NewModels{
 				glEnd();
 
 			}
-
+			glCullFace(GL_FRONT);
 			///draw floors
 			glColor3ub(255,0,0);
 
@@ -232,7 +188,7 @@ namespace NewModels{
 				glEnd();
 			}
 			glDisable(GL_TEXTURE_2D);
-
+			glDisable(GL_CULL_FACE);
 
 			//draw lines
 			glLineWidth(4);
@@ -285,21 +241,36 @@ namespace NewModels{
     };
 
     class Map{
-      public:
-        std::vector<Sector> sectors;
-		vec3 player_start;
-    	uint16_t player_start_angle;
-    	TexBinder* texture_binder;
+		public:
+			std::vector<Sector> sectors;
+			vec3 player_start;
+			uint16_t player_start_angle;
+			TexBinder* texture_binder;
 
-      Map() {
-	      texture_binder = new TexBinder();
-      }
+			Map() {
+			  texture_binder = new TexBinder();
+			}
 
-      void render() {
-	      for (auto& sector : sectors) {
-		      sector.Render();
-	      }
-      }
+			void render() {
+			  for (auto& sector : sectors) {
+			      sector.Render();
+			  }
+			}
+
+			Sector* GetPlayerSector(vec2 pos, Sector* previousSector) {
+				 if (previousSector && previousSector->isInside(pos)) {
+					return previousSector;
+				 }
+				 for (auto& sector: sectors) {
+				     if (sector.isInside(pos))
+					    return &sector;
+				 }
+				 return nullptr;
+			}
+
+			vec2 GetNextAllowedPosition(vec2 previous_pos,vec2 next_pos, Sector* currentSector) {
+
+			}
     };
 };
 #endif //NEW_MODELS_H

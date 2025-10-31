@@ -3,21 +3,22 @@
 
 #define M_PI 3.14159265358979323846
 
-Player::Player(NewModels::vec3 position, float angle) {
+Player::Player(NewModels::vec3 position, float angle, NewModels::Map* map) {
 	this->position = position;
 	this->pos_x = static_cast<float>(position.x);
 	this->pos_y = static_cast<float>(position.z);
 	this->pos_z = static_cast<float>(position.y);
 	this->camera = new Camera(angle);
-	this->current_sector = nullptr;
-	this->map = nullptr;
+
+	this->new_map = map;
+	this->current_sector = map->GetPlayerSector({position.x,position.y},nullptr);
 }
 
 void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 	camera->HandleEvent(event, deltaTime);
 
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);
-	float speed = 40.0f * deltaTime; // Adjusted for Doom map scale
+	float speed = 100.0f * deltaTime; // Adjusted for Doom map scale
 
 	float yaw_rad = camera->GetYaw() * M_PI / 180.0f;
 
@@ -37,14 +38,19 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 
 	pos_x += fmin(forward_x * move_forward + right_x * move_strafe,speed);
 	pos_z += fmin(forward_z * move_forward + right_z * move_strafe,speed);
-	pos_y += move_vertical;
+	//pos_y += move_vertical;
+
+	NewModels::vec2 allowedPos = new_map->
 
 	// Update short position (optional, for map interactions)
 	position.x = static_cast<short>(pos_x);
-	position.y = static_cast<short>(pos_y);
-	position.z = static_cast<short>(pos_z);
+	position.y = static_cast<short>(pos_z);
 
+	if (move_forward >0.|| move_strafe >0.)
+		current_sector = new_map->GetPlayerSector({position.x,position.y},current_sector);
+	pos_y = current_sector->floor_height+50.;
 
+	position.z = static_cast<short>(pos_y);
 	// printf("Yaw : %lf\n", camera->GetYaw());
 	// printf("Position : %lf %lf\n", pos_x, pos_z);
 }

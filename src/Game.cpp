@@ -66,12 +66,12 @@ void Game::SelectMap(int id) {
     if (current_map && current_map->player_start.x != 0 && current_map->player_start.y != 0) {
         // Start above the floor (assuming z is height)
         NewModels::vec3 start_pos = current_map->player_start;
-        printf("Player start: %f, %f, %f\nAngle: %d", start_pos.x, start_pos.y, start_pos.z, current_map->player_start_angle);
+        printf("Player start: %hd, %hd, %hd\nAngle: %d", start_pos.x, start_pos.y, start_pos.z, current_map->player_start_angle);
         start_pos.z += 10; // Adjust based on typical sector height
-        player = new Player(start_pos, current_map->player_start_angle); // Match map's angle if available
+        player = new Player(start_pos, current_map->player_start_angle, current_map); // Match map's angle if available
     } else {
         std::cerr << "No valid player start found for map " << id << std::endl;
-        player = new Player({0, 0, 128}, 90.0f); // Fallback
+        player = new Player({0, 0, 128}, 90.0f, current_map); // Fallback
     }
 }
 
@@ -79,7 +79,7 @@ void Game::Run() {
     bool running = true;
     SDL_Event event;
     double deltaTime = 0.0;
-    double fps = 60.0f;
+    double fps = 120.0f;
     double fps_time = 1.0f/fps;
     double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();

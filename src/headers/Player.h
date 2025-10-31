@@ -8,11 +8,13 @@
 
 class Player {
 public:
-   Player(NewModels::vec3 position, float angle);
+   Player(NewModels::vec3 position, float angle, NewModels::Map* map);
+   void Update(double deltaTime);
    void HandleEvent(SDL_Event* event, double deltaTime);
    void Render();
 
 private:
+   NewModels::Map* new_map;
    NewModels::vec3 position{}; // Short for map compatibility
    float pos_x, pos_y, pos_z; // Float for smooth movement
    Camera* camera;

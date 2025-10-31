@@ -170,6 +170,7 @@ NewModels::Map *Parser::generateMap(int id) {
 					auto sector = mp->sidedefs[line.sidedef[i]].sector_tag;
 					Nodes[sector].insert(v1);
 					Nodes[sector].insert(v2);
+
 					Lines[sector].emplace_back(std::make_pair(line.v1, line.v2));
 				}
 			}
@@ -277,6 +278,9 @@ NewModels::Map *Parser::generateMap(int id) {
 					NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 							v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 
+					if (i == 1)
+						std::swap(v1,v2);
+
 					if (other == none) {
 						if (sd.middle_texture[0] == '-')
 							continue;
@@ -315,11 +319,13 @@ NewModels::Map *Parser::generateMap(int id) {
 						if (sd.middle_texture[0] != '-') {
 							//printf("Middle texture %8s\n", sd.middle_texture);
 							auto sector = &map->sectors[sd.sector_tag];
+							auto other_sector = &map->sectors[mp->sidedefs[other].sector_tag];
+
 							auto wall = NewModels::wall{
-								sector->getPointer({v1.x, v1.y}, NewModels::Sector::Ceiling),
-								sector->getPointer({v2.x, v2.y}, NewModels::Sector::Ceiling),
-								sector->getPointer({v2.x, v2.y}, NewModels::Sector::Floor),
-								sector->getPointer({v1.x, v1.y}, NewModels::Sector::Floor),
+								other_sector->getPointer({v1.x, v1.y}, NewModels::Sector::Ceiling),
+								other_sector->getPointer({v2.x, v2.y}, NewModels::Sector::Ceiling),
+								other_sector->getPointer({v2.x, v2.y}, NewModels::Sector::Floor),
+								other_sector->getPointer({v1.x, v1.y}, NewModels::Sector::Floor),
 								1
 							};
 							wall.texture = tb->GetTexture(sd.middle_texture);
