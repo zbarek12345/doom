@@ -16,7 +16,7 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 	camera->HandleEvent(event, deltaTime);
 
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);
-	float speed = 100.0f * deltaTime; // Adjusted for Doom map scale
+	float speed = 50.0f * deltaTime; // Adjusted for Doom map scale
 
 	float yaw_rad = camera->GetYaw() * M_PI / 180.0f;
 
@@ -34,10 +34,18 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= speed;
 
 
-	NewModels::fvec3 movement = forward * move_forward + right * move_strafe;
-	movement = movement.normalize() * speed + vertical*move_vertical;
-	vertical.y = std::max(pos.y, (current_sector->floor_height + 30.f));
-	new_map->HandleMovement(movement, pos, current_sector);
+	movement_vector =movement_vector+ ( forward * move_forward + right * move_strafe);
+
+
+}
+
+void Player::Update(double deltaTime) {
+	float speed = 50.0f * deltaTime;
+	//Update player's postion only once;
+	movement_vector = movement_vector.normalize()*(200.*deltaTime);
+	new_map->HandleMovement(movement_vector, pos, current_sector);
+	pos.y = current_sector->floor_height + 46;
+	movement_vector.clear();
 }
 
 void Player::Render() {

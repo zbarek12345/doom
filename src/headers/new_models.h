@@ -8,6 +8,7 @@
 #include<stdint.h>
 #include <algorithm>
 #include <CDTUtils.h>
+#include <set>
 #include <gl/gl.h>
 
 #include "new_models.h"
@@ -133,7 +134,7 @@ namespace NewModels{
 			this->z = z;
 		}
 
-		fvec3 operator+(fvec3& other){
+		fvec3 operator+(fvec3& other) const{
 			return {x + other.x, y + other.y, z + other.z};
 		}
 
@@ -141,7 +142,7 @@ namespace NewModels{
 			return {x + other.x, y + other.y, z + other.z};
 		}
 
-		fvec3 operator-(fvec3& other){
+		fvec3 operator-(fvec3& other) const{
 			return {x - other.x, y - other.y, z - other.z};
 		}
 
@@ -251,6 +252,7 @@ namespace NewModels{
 	};
 
 	class Special {
+
 	};
 
 	class Sector{
@@ -263,7 +265,7 @@ namespace NewModels{
 
 		CDT::EdgeUSet outer_edges;
 		std::vector<uint16_t> edges_map;
-		std::vector<Sector*> neighbors;
+		std::set<Sector*> neighbors;
 		std::vector<Wall*> walls={};
 
 		enum type {
@@ -663,8 +665,8 @@ namespace NewModels{
 			return !res;
 		}
 
-		Sector* getOther() const {
-			return other_sector == this_sector ? other_sector : this_sector;
+		Sector* getOther(Sector* current) const {
+			return other_sector == current ? this_sector : other_sector;
 		}
 
 		bool isInCoords(fvec3 point) {
@@ -744,7 +746,7 @@ namespace NewModels{
 				fvec3 vec = fvec3(vector);
 				auto thresholdDistance = rayType == WalkSide ? 1. : 17.;
 				if (intersectionDist < SHRT_MAX) {
-					printf("%d, %f\n", currentSector->id, intersectionDist);
+					//printf("%d, %f\n", currentSector->id, intersectionDist);
 				}
 				if (intersectionDist > vectorLength + thresholdDistance) {
 					res = vec + sp;
@@ -752,10 +754,10 @@ namespace NewModels{
 				}
 				else {
 					if (intersectionWall->AllowWalkThrough(currentSector)) {
-						printf("wall verified\n");
+						//printf("wall verified\n");
 						res = sp + normalizedVector*(intersectionDist+1);
 						vector = vector - normalizedVector*(intersectionDist-1);
-						currentSector = intersectionWall->getOther();
+						currentSector = intersectionWall->getOther(currentSector);
 					}
 					else {
 						res = sp + normalizedVector*(intersectionDist-thresholdDistance);
@@ -763,7 +765,7 @@ namespace NewModels{
 					}
 				}
 
-				return vec3(round(res.x), round(res.y),round(res.z));
+				return vec3(res.x, res.y,res.z);
 			}
 
 			else {
@@ -845,8 +847,8 @@ namespace NewModels{
 				while (!move.zero()) {
 					fvec3 p_pos = vec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
 					player_pos_save = player_pos.to_vec3();
-					fvec3 perpendicular = fvec3{-move.x, 0., move.z};
-					perpendicular = perpendicular.normalize()*16;
+					fvec3 perpendicular = fvec3{-move.z, 0, move.x};
+					perpendicular = perpendicular.normalize()*2;
 
 					fvec3 p_pos_2 = p_pos + perpendicular;
 					fvec3 p_pos_3 = p_pos - perpendicular;

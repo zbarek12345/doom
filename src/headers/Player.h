@@ -4,6 +4,7 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include "Camera.h"
+#include "map.h"
 #include "new_models.h"
 
 class Player {
@@ -14,6 +15,7 @@ public:
    void Render();
 
 private:
+   NewModels::fvec3 movement_vector{};
    NewModels::Map* new_map;
    NewModels::vec3 position{}; // Short for map compatibility
    NewModels::fvec3 pos;// Float for smooth movement

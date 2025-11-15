@@ -320,6 +320,8 @@ NewModels::Map *Parser::generateMap(int id) {
 					wall->assignMiddleTexture(1,tex);
 				}
 				left_sector->bindWall(wall);
+				left_sector->neighbors.emplace(right_sector);
+				right_sector->neighbors.emplace(left_sector);
 			}
 
 			map->walls.push_back(wall);

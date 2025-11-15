@@ -2,6 +2,7 @@
 // Created by Wiktor on 02.10.2025.
 //
 #include "original_classes.h"
+#include <string>
 #include <vector>
 #ifndef MAP_H
 #define MAP_H
