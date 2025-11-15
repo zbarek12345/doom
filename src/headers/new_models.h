@@ -10,11 +10,8 @@
 #include <CDTUtils.h>
 #include <gl/gl.h>
 
-#include "map.h"
 #include "new_models.h"
-#include "original_classes.h"
 #include "TexBinder.h"
-#include "tinystl/vector.h"
 
 namespace NewModels{
 	struct fvec3;
@@ -844,9 +841,10 @@ namespace NewModels{
 
 			void HandleMovement(fvec3& move, fvec3& player_pos, Sector*& currentSector) {
 				bool target_hit;
+				fvec3 player_pos_save;
 				while (!move.zero()) {
 					fvec3 p_pos = vec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
-
+					player_pos_save = player_pos.to_vec3();
 					fvec3 perpendicular = fvec3{-move.x, 0., move.z};
 					perpendicular = perpendicular.normalize()*16;
 
@@ -877,7 +875,11 @@ namespace NewModels{
 						move = mv3;
 					}
 					vec3 p_pos_s = player_pos.to_vec3();
-					currentSector = getPlayerSector({p_pos_s.x, p_pos_s.z}, currentSector);
+					auto next_sector = getPlayerSector({p_pos_s.x, p_pos_s.z}, currentSector);
+					if (next_sector == nullptr)
+						player_pos = player_pos_save;
+					else
+						currentSector = next_sector;
 				}
 			}
 

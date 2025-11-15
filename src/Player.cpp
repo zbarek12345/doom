@@ -36,6 +36,7 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 
 	NewModels::fvec3 movement = forward * move_forward + right * move_strafe;
 	movement = movement.normalize() * speed + vertical*move_vertical;
+	vertical.y = std::max(pos.y, (current_sector->floor_height + 30.f));
 	new_map->HandleMovement(movement, pos, current_sector);
 }
 
