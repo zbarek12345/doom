@@ -12,9 +12,9 @@ int main(int argc, char *argv[]) {
 	parser.load_file(filename);
 
 	// show bmp
-	for (int i=0;i<34;i++) {
+	for (int i=0;i<32;i++) {
 	 	auto p = parser.get_color_map(i);
-	 	std::string name = "out"+std::to_string(i)+".bmp";
+	 	std::string name = "tmp/out"+std::to_string(i)+".bmp";
 	 	stbi_write_bmp(name.c_str(), 16, 16, 3, p);
 	}
 

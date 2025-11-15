@@ -180,9 +180,9 @@ void Parser::load_file(char *file_name) {
 	fread(gd.lumps, sizeof(original_classes::lump), gd.header.lump_count, file);
 
 	//todo To delete
-	for (uint32_t i = 0; i < gd.header.lump_count; i++) {
-		printf("%s\n",gd.lumps[i].lump_name);
-	}
+	// for (uint32_t i = 0; i < gd.header.lump_count; i++) {
+	// 	printf("%s\n",gd.lumps[i].lump_name);
+	// }
 
 	// Find maps (E#M# format)
 	regex_t regex;
