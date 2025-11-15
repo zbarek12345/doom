@@ -5,13 +5,11 @@
 
 Player::Player(NewModels::vec3 position, float angle, NewModels::Map* map) {
 	this->position = position;
-	this->pos_x = static_cast<float>(position.x);
-	this->pos_y = static_cast<float>(position.z);
-	this->pos_z = static_cast<float>(position.y);
+	pos = NewModels::fvec3(position).DoomInvert();
 	this->camera = new Camera(angle);
 
 	this->new_map = map;
-	this->current_sector = map->GetPlayerSector({position.x,position.y},nullptr);
+	this->current_sector = map->getPlayerSector({position.x,position.y},nullptr);
 }
 
 void Player::HandleEvent(SDL_Event* event, double deltaTime) {
@@ -23,10 +21,9 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 	float yaw_rad = camera->GetYaw() * M_PI / 180.0f;
 
 
-	float forward_x = sinf(yaw_rad);
-	float forward_z = cosf(yaw_rad);
-	float right_x = cosf(yaw_rad);
-	float right_z = -sinf(yaw_rad);
+	NewModels::fvec3 forward(sinf(yaw_rad), 0.0f, cosf(yaw_rad));
+	NewModels::fvec3 right(cosf(yaw_rad), 0.0f, -sinf(yaw_rad));
+	NewModels::fvec3 vertical(0.0f, 1.0f, 0.0f);
 
 	float move_forward = 0.0f, move_strafe = 0.0f, move_vertical = 0.0f;
 	if (keys[SDL_SCANCODE_W]) move_forward += speed;
@@ -36,26 +33,13 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 	if (keys[SDL_SCANCODE_SPACE]) move_vertical += speed;
 	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= speed;
 
-	pos_x += fmin(forward_x * move_forward + right_x * move_strafe,speed);
-	pos_z += fmin(forward_z * move_forward + right_z * move_strafe,speed);
-	//pos_y += move_vertical;
 
-	NewModels::vec2 allowedPos = new_map->
-
-	// Update short position (optional, for map interactions)
-	position.x = static_cast<short>(pos_x);
-	position.y = static_cast<short>(pos_z);
-
-	if (move_forward >0.|| move_strafe >0.)
-		current_sector = new_map->GetPlayerSector({position.x,position.y},current_sector);
-	pos_y = current_sector->floor_height+50.;
-
-	position.z = static_cast<short>(pos_y);
-	// printf("Yaw : %lf\n", camera->GetYaw());
-	// printf("Position : %lf %lf\n", pos_x, pos_z);
+	NewModels::fvec3 movement = forward * move_forward + right * move_strafe;
+	movement = movement.normalize() * speed + vertical*move_vertical;
+	new_map->HandleMovement(movement, pos, current_sector);
 }
 
 void Player::Render() {
 	camera->Render();
-	glTranslatef(-pos_x, -pos_y, pos_z);
+	glTranslatef(-pos.x, -pos.y, pos.z);
 }

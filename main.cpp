@@ -41,6 +41,6 @@ int main(int argc, char* argv[]) {
     game.Run();
 
     // Parser* p = new Parser();
-    // p->load_file("./wad/PAR.wad");
-    // p->obj_export(1, "par_e1m2_triangles.obj");
+    // p->load_file("./wad/DOOM.WAD");
+    // p->testExport(0, "par_e1m2_triangles.obj");
 }

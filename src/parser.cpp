@@ -141,6 +141,8 @@ cleanup:
 	throw std::runtime_error("Error parsing file");
 }
 
+//NewModels::Map *Parser::generateMap(int id) {return nullptr;};
+
 NewModels::Map *Parser::generateMap(int id) {
 	auto *mp = content->maps[id];
 	printf("Linedef no. %llu\n Vertex no. %llu\n", mp->linedefs.size(), mp->vertexes.size());
@@ -191,15 +193,12 @@ NewModels::Map *Parser::generateMap(int id) {
 				int16_t min_x = SHRT_MAX, min_y = SHRT_MAX, max_x = SHRT_MIN, max_y = SHRT_MIN;
 
 				for (auto node: Nodes[i]) {
-
 					min_x = std::min(min_x, node.x);
 					min_y = std::min(min_y, node.y);
 					max_x = std::max(max_x, node.x);
 					max_y = std::max(max_y, node.y);
-
-					temp.emplace_back(node);
-					sector->ceiling.push_back({node.x, node.y, ceil});
-					sector->floor.push_back({node.x, node.y, floor});
+					sector->nodes.push_back(node);
+					temp.push_back(node);
 				}
 
 				sector->bounding_box[0] = {min_x,min_y};
@@ -258,99 +257,72 @@ NewModels::Map *Parser::generateMap(int id) {
 					});
 				}
 
-				sector->map = mp;
 				sector->outer_edges = cdt.fixedEdges;
 				sector->edges_map = edges_map;
 
-				if (sector->isInside(NewModels::vec2{map->player_start.x, map->player_start.y})) {
-					map->player_start.z = sector->floor_height;
-					printf("Player is inside sector #%d, height is %d\n", i, sector->floor_height);
-				}
+				// if (sector->isInside(NewModels::vec2{map->player_start.x, map->player_start.y})) {
+				// 	map->player_start.z = sector->floor_height;
+				// 	printf("Player is inside sector #%d, height is %d\n", i, sector->floor_height);
+				// }
 			}
 		}
 		//printf("Sectors calculated;\n");
 		auto tb = map->texture_binder;
 		for (auto &line: mp->linedefs) {
-			for (int i = 0; i < 2; i++) {
-				if (line.sidedef[i] != none) {
-					auto sd = mp->sidedefs[line.sidedef[i]];
-					auto other = line.sidedef[(i + 1) % 2];
-					NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
-							v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
+			auto right_sector_tag = line.sidedef[0];
+			auto left_sector_tag =  line.sidedef[1];
 
-					if (i == 1)
-						std::swap(v1,v2);
+			NewModels::Sector* right_sector = nullptr, * left_sector = nullptr;
+			if (right_sector_tag != none)
+				right_sector = &map->sectors[mp->sidedefs[right_sector_tag].sector_tag];
+			if (left_sector_tag != none)
+				left_sector = &map->sectors[mp->sidedefs[left_sector_tag].sector_tag];
 
-					if (other == none) {
-						if (sd.middle_texture[0] == '-')
-							continue;
-						auto sector = &map->sectors[sd.sector_tag];
-						auto wall = NewModels::wall{
-							sector->getPointer({v1.x, v1.y}, NewModels::Sector::Ceiling),
-							sector->getPointer({v2.x, v2.y}, NewModels::Sector::Ceiling),
-							sector->getPointer({v2.x, v2.y}, NewModels::Sector::Floor),
-							sector->getPointer({v1.x, v1.y}, NewModels::Sector::Floor),
-							1
-						};
-
-						wall.texture = tb->GetTexture(sd.middle_texture);
-						wall.tex_offset_x = sd.x_offset;
-						wall.tex_offset_y = sd.y_offset;
-						sector->walls.push_back(wall);
-					} else {
-						auto sector = &map->sectors[sd.sector_tag];
-						auto other_sector = &map->sectors[mp->sidedefs[other].sector_tag];
-
-						if (sd.upper_texture[0] != '-' && sector->ceil_height > other_sector->ceil_height) {
-							//printf("Upper texture %8s\n", sd.upper_texture);
-							auto wall = NewModels::wall{
-								sector->getPointer({v1.x, v1.y}, NewModels::Sector::Ceiling),
-								sector->getPointer({v2.x, v2.y}, NewModels::Sector::Ceiling),
-								other_sector->getPointer({v2.x, v2.y}, NewModels::Sector::Ceiling),
-								other_sector->getPointer({v1.x, v1.y}, NewModels::Sector::Ceiling),
-								0
-							};
-							wall.texture = tb->GetTexture(sd.upper_texture);
-							wall.tex_offset_x = sd.x_offset;
-							wall.tex_offset_y = sd.y_offset;
-							sector->walls.push_back(wall);
-						}
-
-						if (sd.middle_texture[0] != '-') {
-							//printf("Middle texture %8s\n", sd.middle_texture);
-							auto sector = &map->sectors[sd.sector_tag];
-							auto other_sector = &map->sectors[mp->sidedefs[other].sector_tag];
-
-							auto wall = NewModels::wall{
-								other_sector->getPointer({v1.x, v1.y}, NewModels::Sector::Ceiling),
-								other_sector->getPointer({v2.x, v2.y}, NewModels::Sector::Ceiling),
-								other_sector->getPointer({v2.x, v2.y}, NewModels::Sector::Floor),
-								other_sector->getPointer({v1.x, v1.y}, NewModels::Sector::Floor),
-								1
-							};
-							wall.texture = tb->GetTexture(sd.middle_texture);
-							wall.tex_offset_x = sd.x_offset;
-							wall.tex_offset_y = sd.y_offset;
-							sector->walls.push_back(wall);
-						}
-
-						if (sd.lower_texture[0] != '-') {
-							//printf("Lower texture %8s\n", sd.lower_texture);
-							auto wall = NewModels::wall{
-								other_sector->getPointer({v1.x, v1.y}, NewModels::Sector::Floor),
-								other_sector->getPointer({v2.x, v2.y}, NewModels::Sector::Floor),
-								sector->getPointer({v2.x, v2.y}, NewModels::Sector::Floor),
-								sector->getPointer({v1.x, v1.y}, NewModels::Sector::Floor),
-								2
-							};
-							wall.texture = tb->GetTexture(sd.lower_texture);
-							wall.tex_offset_x = sd.x_offset;
-							wall.tex_offset_y = sd.y_offset;
-							sector->walls.push_back(wall);
-						}
-					}
+			NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
+					v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
+			auto wall = new NewModels::Wall(right_sector, left_sector);
+			wall->setCoordinates(v1,v2);
+			wall->setFlag(line.flags);
+			///Right sector handling;
+			if (right_sector != nullptr) {
+				auto sd = &mp->sidedefs[line.sidedef[0]];
+				if (sd->upper_texture[0] != '-') {
+					auto tex = tb->GetTexture(sd->upper_texture);
+					wall->assignUpperTexture(0,tex);
 				}
+				if (sd->lower_texture[0] != '-') {
+					auto tex = tb->GetTexture(sd->lower_texture);
+					wall->assignLowerTexture(0,tex);
+				}
+				if (sd->middle_texture[0] != '-') {
+					auto tex = tb->GetTexture(sd->middle_texture);
+					wall->assignMiddleTexture(0,tex);
+				}
+				if (line.special_type != 0) {
+					wall->assignSpecial(line.special_type);
+				}
+				right_sector->bindWall(wall);
 			}
+
+			if (left_sector != nullptr) {
+				auto sd = &mp->sidedefs[line.sidedef[1]];
+				wall->setCoordinates(v2,v1);
+				if (sd->upper_texture[0] != '-') {
+					auto tex = tb->GetTexture(sd->upper_texture);
+					wall->assignUpperTexture(1,tex);
+				}
+				if (sd->lower_texture[0] != '-') {
+					auto tex = tb->GetTexture(sd->lower_texture);
+					wall->assignLowerTexture(1,tex);
+				}
+				if (sd->middle_texture[0] != '-') {
+					auto tex = tb->GetTexture(sd->middle_texture);
+					wall->assignMiddleTexture(1,tex);
+				}
+				left_sector->bindWall(wall);
+			}
+
+			map->walls.push_back(wall);
 		}
 
 		printf("All Walls calculated;\n");
@@ -362,6 +334,7 @@ NewModels::Map *Parser::generateMap(int id) {
 struct fvec2 {
 	float x, y;
 };
+
 void Parser::testExport(int id, const char *filepath) {
 	auto mp = content->maps[id];
 
@@ -379,6 +352,8 @@ void Parser::testExport(int id, const char *filepath) {
 		float dx = v2.x - v1.x;
 		float dy = v2.y - v1.y;
 
+		if (line.special_type != 0)
+		printf("Line %u\n", line.special_type);
 		// Calculate the perpendicular vector
 		float perpDx = -dy;
 		float perpDy = dx;
@@ -463,12 +438,12 @@ void Parser::testExport(int id, const char *filepath) {
 
 void Parser::find_sector(int id, NewModels::vec3 vertex) {
 	auto map = generateMap(id);
-	for (int i = 0; i < map->sectors.size(); i++) {
-		for (auto &floor_p: map->sectors[i].floor) {
-			if (vertex == floor_p)
-				printf("Found sector %4d\n", i);
-		}
-	}
+	// for (int i = 0; i < map->sectors.size(); i++) {
+	// 	for (auto &floor_p: map->sectors[i].floor) {
+	// 		if (vertex == floor_p)
+	// 			printf("Found sector %4d\n", i);
+	// 	}
+	// }
 }
 
 void Parser::obj_export(int id, const char *filepath) {
@@ -485,19 +460,19 @@ void Parser::obj_export(int id, const char *filepath) {
 	std::vector<int> offsets[2] = {std::vector<int>(mp->sectors.size()), std::vector<int>(mp->sectors.size())};
 
 	//Register vertexes
-	for (int i = 0; i < map->sectors.size(); i++) {
-		auto sector = &map->sectors[i];
-		offsets[0][i] = v_count;
-		v_count += sector->floor.size();
-		for (auto &e: sector->floor) {
-			fprintf(f, "v %d %d %d\n", e.x, e.y, e.z);
-		}
-		offsets[1][i] = v_count;
-		for (auto &e: sector->ceiling) {
-			fprintf(f, "v %d %d %d\n", e.x, e.y, e.z);
-		}
-		v_count += sector->ceiling.size();
-	}
+	// for (int i = 0; i < map->sectors.size(); i++) {
+	// 	auto sector = &map->sectors[i];
+	// 	offsets[0][i] = v_count;
+	// 	v_count += sector->floor.size();
+	// 	for (auto &e: sector->floor) {
+	// 		fprintf(f, "v %d %d %d\n", e.x, e.y, e.z);
+	// 	}
+	// 	offsets[1][i] = v_count;
+	// 	for (auto &e: sector->ceiling) {
+	// 		fprintf(f, "v %d %d %d\n", e.x, e.y, e.z);
+	// 	}
+	// 	v_count += sector->ceiling.size();
+	// }
 
 	//draw floors
 	fprintf(f, "\n\ng Ceilings\n usemtl Red \n");
@@ -536,23 +511,23 @@ void Parser::obj_export(int id, const char *filepath) {
 			"g MedWall \n usemtl Orange\n";
 	auto offset = v_count;
 	for (int i = 0; i < map->sectors.size(); i++) {
-		for (auto &wall: map->sectors[i].walls) {
-			fprintf(f, "v %d %d %d \n", (wall.left_top->x), (wall.left_top->y), (wall.left_top->z));
-			fprintf(f, "v %d %d %d \n", (wall.right_top->x), (wall.right_top->y), (wall.right_top->z));
-			fprintf(f, "v %d %d %d \n", (wall.right_bottom->x), (wall.right_bottom->y), (wall.right_bottom->z));
-			fprintf(f, "v %d %d %d \n", (wall.left_bottom->x), (wall.left_bottom->y), (wall.left_bottom->z));
-			auto buff = "f " + std::to_string(offset) + " " + std::to_string(offset + 1) + " "
-			            + std::to_string(offset + 2) + " " + std::to_string(offset + 3) + " " + std::to_string(offset) +
-			            "\n";
-			if (wall.type == 0)
-				low_buff += buff;
-			else if (wall.type == 1)
-				med_buff += buff;
-			else
-				high_buff += buff;
-
-			offset += 4;
-		}
+		// for (auto &wall: map->sectors[i].walls) {
+		// 	fprintf(f, "v %d %d %d \n", (wall.left_top->x), (wall.left_top->y), (wall.left_top->z));
+		// 	fprintf(f, "v %d %d %d \n", (wall.right_top->x), (wall.right_top->y), (wall.right_top->z));
+		// 	fprintf(f, "v %d %d %d \n", (wall.right_bottom->x), (wall.right_bottom->y), (wall.right_bottom->z));
+		// 	fprintf(f, "v %d %d %d \n", (wall.left_bottom->x), (wall.left_bottom->y), (wall.left_bottom->z));
+		// 	auto buff = "f " + std::to_string(offset) + " " + std::to_string(offset + 1) + " "
+		// 	            + std::to_string(offset + 2) + " " + std::to_string(offset + 3) + " " + std::to_string(offset) +
+		// 	            "\n";
+		// 	if (wall.type == 0)
+		// 		low_buff += buff;
+		// 	else if (wall.type == 1)
+		// 		med_buff += buff;
+		// 	else
+		// 		high_buff += buff;
+		//
+		// 	offset += 4;
+		// }
 	}
 	fprintf(f, "%s\n\n", low_buff.c_str());
 	fprintf(f, "%s\n\n", med_buff.c_str());

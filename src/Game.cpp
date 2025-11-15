@@ -123,7 +123,7 @@ void Game::Run() {
 
         if (render_time>fps_time) {
             if (player) player->Render();
-            if (current_map) current_map->render();
+            if (current_map) current_map->Render();
             render_time = fmod(render_time, fps_time);
         }
 
