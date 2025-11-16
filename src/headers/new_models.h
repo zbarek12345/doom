@@ -96,6 +96,7 @@ namespace NewModels{
 		std::vector<uint16_t> edges_map;
 		std::set<Sector*> neighbors;
 		std::vector<Wall*> walls={};
+		bool have_print= false;
 
 		enum type {
 			Ceiling,
@@ -104,55 +105,57 @@ namespace NewModels{
 
 		void BindTextureCoords(svec2 coords) {
 			fvec2 diff = {coords.x/tex_size, coords.y/tex_size};
-
-			glTexCoord2f(diff.x, diff.y);
+			if (id==45 && !have_print)
+				printf(" Tex Coords : (%f %f)\n", diff.x, -diff.y);
+			glTexCoord2f(diff.x, -diff.y);
 		}
 
 		void Render() {
 			glEnable(GL_CULL_FACE);
-
-			glCullFace(GL_BACK);
-			///draw ceils
-			//glColor3ub(0,255,0);
-			auto refPoint = nodes[0];
+			glCullFace(GL_BACK);  // Standard: cull backs for both
+			// Ceilings
 			glBindTexture(GL_TEXTURE_2D, ceil_texture);
+			glBegin(GL_TRIANGLES);
 			for (auto& line: lines) {
-				glBegin(GL_TRIANGLES);
-				auto p = nodes[line.v1];
-				glVertex3s(p.x, ceil_height, -p.y);
+				// REVERSE ORDER for ceil: v3, v2, v1 -> CCW from below
+				auto p = nodes[line.v1]; glVertex3f(p.x, ceil_height, -p.y);
+				if (id==45 && !have_print)
+					printf("\n Real Coords : (%hd %hd)", p.x, -p.y);
 				BindTextureCoords(p);
 
-				p = nodes[line.v2];
-				glVertex3s(p.x, ceil_height, -p.y);
+				p = nodes[line.v2]; glVertex3f(p.x, ceil_height, -p.y);
+				if (id==45 && !have_print)
+					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
 				BindTextureCoords(p);
 
-				p = nodes[line.v3];
-				glVertex3s(p.x, ceil_height, -p.y);
+				p = nodes[line.v3]; glVertex3f(p.x, ceil_height, -p.y);
+				if (id==45 && !have_print)
+					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
 				BindTextureCoords(p);
-				glEnd();
+
 			}
-
-			glCullFace(GL_FRONT);
-			///draw floors
-			//glColor3ub(255,0,0);
+			glEnd();
+			// Floors (normal order)
 			glBindTexture(GL_TEXTURE_2D, floor_texture);
+			glBegin(GL_TRIANGLES);  // Move outside loop for efficiency
 			for (auto& line: lines) {
-				glBegin(GL_TRIANGLES);
-				auto p = nodes[line.v1];
-				glVertex3s(p.x, floor_height, -p.y);
+				auto p = nodes[line.v3]; glVertex3f(p.x, floor_height, -p.y);
+				if (id==45 && !have_print)
+					printf("\n Real Coords : (%hd %hd)", p.x, -p.y);
 				BindTextureCoords(p);
 
-				p = nodes[line.v2];
-				glVertex3s(p.x, floor_height, -p.y);
+				p = nodes[line.v2]; glVertex3f(p.x, floor_height, -p.y);
+				if (id==45 && !have_print)
+					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
 				BindTextureCoords(p);
 
-				p = nodes[line.v3];
-				glVertex3s(p.x, floor_height, -p.y);
+				p = nodes[line.v1]; glVertex3f(p.x, floor_height, -p.y);
+				if (id==45 && !have_print)
+					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
 				BindTextureCoords(p);
-
-				glEnd();
 			}
-			glColor3ub(255, 255, 255);
+			have_print = true;
+			glEnd();
 			glDisable(GL_CULL_FACE);
 		}
 
