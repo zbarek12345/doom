@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cctype>
 #include <GL/glew.h>
-#include <Gl/gl.h>
+#include <GL/gl.h>
 
 void TexBinder::LoadTexture(std::string path) {
 	// Construct absolute path

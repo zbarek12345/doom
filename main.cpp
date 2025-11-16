@@ -2,7 +2,7 @@
 #include <GL/glew.h>
 #include <ostream>
 #include <SDL2/SDL.h>
-#include <gl/gl.h>
+#include <GL/gl.h>
 #include <src/headers/game.h>
 
 #include "src/headers/parser.h"
@@ -35,7 +35,7 @@
 
 int main(int argc, char* argv[]) {
 
-    Game game = Game("Doom1.WAD");
+    Game game = Game("../DOOM.WAD");
     game.Init();
     game.SelectMap(0);
     game.Run();

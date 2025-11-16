@@ -12,6 +12,7 @@ public:
    Player(svec3 position, float angle, NewModels::Map* map);
    void Update(double deltaTime);
    void HandleEvent(SDL_Event* event, double deltaTime);
+   void HandleEvent();
    void Render();
 
 private:

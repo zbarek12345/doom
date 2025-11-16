@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <CDT.h>
+#include <climits>
 
 #include "headers/vec2.h"
 
@@ -312,6 +313,8 @@ NewModels::Map *Parser::generateMap(int id) {
 			}
 
 			if (left_sector != nullptr) {
+				left_sector->neighbors.emplace(right_sector);
+				right_sector->neighbors.emplace(left_sector);
 				auto sd = &mp->sidedefs[line.sidedef[1]];
 				wall->setCoordinates(v2, v1);
 				if (sd->upper_texture[0] != '-') {

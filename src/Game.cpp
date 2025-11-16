@@ -83,43 +83,51 @@ void Game::Run() {
     double fps_time = 1.0f/fps;
     double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    // SDL_SetRelativeMouseMode(SDL_TRUE);
+
+    glViewport(0, 0, 800, 600);
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        std::cerr << "OpenGL error after glViewport: " << err << std::endl;
+    }
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    float fov = 60.0f, aspect = 800.0f / 600.0f, nr = 1.0f, fr = 65536.0f;
+    float f = 1.0f / tanf(fov * 3.14159f / 360.0f);
+    float proj_matrix[16] = {
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (fr + nr) / (nr - fr), -1,
+        0, 0, (2 * fr * nr) / (nr - fr), 0
+    };
+    glLoadMatrixf(proj_matrix);
+
+    glMatrixMode(GL_MODELVIEW);
+
+    err = glGetError();
+    if (err != GL_NO_ERROR) {
+        std::cerr << "OpenGL error after projection setup: " << err << std::endl;
+    }
+
     while (running) {
+        printf("start\n");
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
                 running = false;
             }
-            if (player) {
+            if (event.type == SDL_MOUSEMOTION && player) {
                 player->HandleEvent(&event, deltaTime);
             }
         }
-        player->Update(deltaTime);
+
+        if (player) {
+            player->HandleEvent();
+            player->Update(deltaTime);
+        }
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glViewport(0, 0, 800, 600);
-        GLenum err = glGetError();
-        if (err != GL_NO_ERROR) {
-            std::cerr << "OpenGL error after glViewport: " << err << std::endl;
-        }
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        float fov = 60.0f, aspect = 800.0f / 600.0f, nr = 1.0f, fr = 65536.0f;
-        float f = 1.0f / tanf(fov * 3.14159f / 360.0f);
-        float proj_matrix[16] = {
-            f / aspect, 0, 0, 0,
-            0, f, 0, 0,
-            0, 0, (fr + nr) / (nr - fr), -1,
-            0, 0, (2 * fr * nr) / (nr - fr), 0
-        };
-        glLoadMatrixf(proj_matrix);
-        err = glGetError();
-        if (err != GL_NO_ERROR) {
-            std::cerr << "OpenGL error after projection setup: " << err << std::endl;
-        }
-
-        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
         if (render_time>fps_time) {
@@ -134,10 +142,11 @@ void Game::Run() {
             std::cerr << "OpenGL error after SDL_GL_SwapWindow: " << err << std::endl;
         }
 
-
         auto now = SDL_GetTicks();
         deltaTime = (now - lastTime) / 1000.0;
         render_time += deltaTime;
         lastTime = now;
+
+        // printf("Dt:%f\n", deltaTime);
     }
 }
