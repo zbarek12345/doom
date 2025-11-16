@@ -5,7 +5,7 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include <iostream>
-#include "Parser.h" // Assume this defines Parser and Map
+#include "parser.h" // Assume this defines Parser and Map
 #include "Player.h"
 
 class Game {

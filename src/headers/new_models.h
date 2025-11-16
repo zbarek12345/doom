@@ -8,8 +8,10 @@
 #include<stdint.h>
 #include <algorithm>
 #include <CDTUtils.h>
+#include <climits>
+#include <cstring>
 #include <set>
-#include <gl/gl.h>
+#include <GL/gl.h>
 #include "TexBinder.h"
 #include "vec2.h"
 #include "vec3.h"
@@ -62,6 +64,7 @@ namespace NewModels{
 		Shot,
 	};
 
+	//todo zbidowana do linedef, wywolywanie akcji, aktywacja: walkover, click(ray), hit(tylko na ściane)
 	class ActionPerformer {
 		bool finished;
 		uint8_t speed;
@@ -571,7 +574,7 @@ namespace NewModels{
 				}
 			}
 
-			if (rayType == Walk || rayType ==WalkSide) {
+			if (true) { //rayType == Walk || rayType ==WalkSide) {
 				//printf("[inf] Intersection Dist: %f\n", intersectionDist);
 				fvec3 res = {};
 				fvec3 sp = fvec3(startingPoint);
@@ -581,17 +584,19 @@ namespace NewModels{
 					//printf("%d, %f\n", currentSector->id, intersectionDist);
 				}
 				if (intersectionDist > vectorLength + thresholdDistance) {
+					printf("1\n");
 					res = vec + sp;
 					vector = fvec3(0,0,0);
 				}
 				else {
 					if (intersectionWall->AllowWalkThrough(currentSector)) {
-						//printf("wall verified\n");
+						printf("2\n");
 						res = sp + normalizedVector*(intersectionDist+1);
 						vector = vector - normalizedVector*(intersectionDist-1);
 						currentSector = intersectionWall->getOther(currentSector);
 					}
 					else {
+						printf("3\n");
 						res = sp + normalizedVector*(intersectionDist-thresholdDistance);
 						vector = fvec3(0,0,0);
 					}
@@ -679,6 +684,9 @@ namespace NewModels{
 				bool target_hit;
 				fvec3 player_pos_save;
 				while (!move.is_zero()) {
+					//todo glicz przy wchodzeniu do ściany
+					// printf("stop\n");
+
 					fvec3 p_pos = fvec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
 					player_pos_save = player_pos;
 					fvec3 perpendicular = fvec3{-move.z, 0, move.x};
@@ -687,9 +695,16 @@ namespace NewModels{
 					fvec3 p_pos_2 = p_pos + perpendicular;
 					fvec3 p_pos_3 = p_pos - perpendicular;
 					fvec3 mv1 = move, mv2 = move, mv3=move;
+					auto pos2Sector = getPlayerSector({static_cast<short>(p_pos_2.x),static_cast<short>(p_pos_2.z)}, currentSector);
+					auto pos3Sector = getPlayerSector({static_cast<short>(p_pos_3.x),static_cast<short>(p_pos_3.z)}, currentSector);
+
 					p_pos = RayCaster::PerformRayCast(mv1, currentSector, (svec3)p_pos, RayCaster::Walk, target_hit);
-					p_pos_2 = RayCaster::PerformRayCast(mv2, currentSector, (svec3)p_pos_2, RayCaster::WalkSide, target_hit);
-					p_pos_3 = RayCaster::PerformRayCast(mv3, currentSector, (svec3)p_pos_3, RayCaster::WalkSide, target_hit);
+					if (pos2Sector) {
+						p_pos_2 = RayCaster::PerformRayCast(mv2, pos2Sector, (svec3)p_pos_2, RayCaster::WalkSide, target_hit);
+					}
+					if (pos3Sector) {
+						p_pos_3 = RayCaster::PerformRayCast(mv3, pos3Sector, (svec3)p_pos_3, RayCaster::WalkSide, target_hit);
+					}
 
 					p_pos_2 =p_pos_2 - perpendicular;
 					p_pos_3 =p_pos_3 + perpendicular;

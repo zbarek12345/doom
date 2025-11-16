@@ -1,5 +1,6 @@
 #include "headers/Player.h"
 #include <cmath>
+#include <iostream>
 
 #define M_PI 3.14159265358979323846
 
@@ -12,37 +13,34 @@ Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	this->current_sector = map->getPlayerSector({position.x,position.y},nullptr);
 }
 
-void Player::HandleEvent(SDL_Event* event, double deltaTime) {
-	camera->HandleEvent(event, deltaTime);
-
+void Player::HandleEvent() {
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);
-	float speed = 50.0f * deltaTime; // Adjusted for Doom map scale
 
 	float yaw_rad = camera->GetYaw() * M_PI / 180.0f;
-
 
 	fvec3 forward(sinf(yaw_rad), 0.0f, cosf(yaw_rad));
 	fvec3 right(cosf(yaw_rad), 0.0f, -sinf(yaw_rad));
 	fvec3 vertical(0.0f, 1.0f, 0.0f);
 
 	float move_forward = 0.0f, move_strafe = 0.0f, move_vertical = 0.0f;
-	if (keys[SDL_SCANCODE_W]) move_forward += speed;
-	if (keys[SDL_SCANCODE_S]) move_forward -= speed;
-	if (keys[SDL_SCANCODE_A]) move_strafe -= speed;
-	if (keys[SDL_SCANCODE_D]) move_strafe += speed;
-	if (keys[SDL_SCANCODE_SPACE]) move_vertical += speed;
-	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= speed;
+	if (keys[SDL_SCANCODE_W]) move_forward += 1;
+	if (keys[SDL_SCANCODE_S]) move_forward -= 1;
+	if (keys[SDL_SCANCODE_A]) move_strafe -= 1;
+	if (keys[SDL_SCANCODE_D]) move_strafe += 1;
+	if (keys[SDL_SCANCODE_SPACE]) move_vertical += 1;
+	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= 1;
 
+	movement_vector = forward * move_forward + right * move_strafe;
+}
 
-	movement_vector = movement_vector + ( forward * move_forward + right * move_strafe);
-
-
+void Player::HandleEvent(SDL_Event* event, double deltaTime) {
+	camera->HandleEvent(event, deltaTime);
 }
 
 void Player::Update(double deltaTime) {
-	float speed = 50.0f * deltaTime;
+	float speed = 100.0f * deltaTime;
 	//Update player's postion only once;
-	movement_vector = movement_vector.normalized()*(200.*deltaTime);
+	movement_vector = movement_vector.normalized()*speed;
 	new_map->HandleMovement(movement_vector, pos, current_sector);
 	pos.y = current_sector->floor_height + 46;
 	movement_vector = fvec3::zero;
