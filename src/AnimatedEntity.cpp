@@ -4,7 +4,7 @@
 
 #include "headers/AnimatedEntity.h"
 
-AnimatedEntity::AnimatedEntity(const svec2 pos, const svec2 size, const std::vector<GLuint> &textures):Entity(pos, size, textures[0]){
+AnimatedEntity::AnimatedEntity(const svec2 pos, const svec2 size, std::vector<GLuint> textures, EntityPosType type):Entity(pos, size, textures[0], type){
 	this->textures = textures;
 	current_ = 0;
 }
@@ -17,5 +17,3 @@ void AnimatedEntity::Update(const double deltaTime) {
 		texId = textures[current_];
 	}
 }
-
-using BarrelEntity = AnimatedEntity;

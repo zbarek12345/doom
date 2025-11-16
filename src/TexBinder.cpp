@@ -10,9 +10,17 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 
-void TexBinder::LoadTexture(std::string path) {
+void TexBinder::LoadTexture(std::string path, TextureType type) {
 	// Construct absolute path
-	std::string abs_path = base_path + "\\" + path + ".png";
+
+	std::string abs_path = "./textures";
+	if (type == TextureType::FlatTexture)
+		abs_path = base_path + "\\" + path + ".png";
+	else if (type == TextureType::ObstacleTexture)
+		abs_path = "./DECORATIONS/" + path + ".png";
+	else if (type == TextureType::ItemTexture)
+		abs_path = "./ITEMS/" + path + ".png";
+
 
 	printf("Loading texture %s\n", abs_path.c_str());
 	int width, height, channels;
@@ -45,14 +53,14 @@ void TexBinder::LoadTexture(std::string path) {
 	}
 }
 
-GLuint TexBinder::GetTexture(const char* texture_name) {
+GLuint TexBinder::GetTexture(const char* texture_name, TextureType type) {
 	size_t actual_len = strnlen(texture_name, 8);
 	std::string texname_cmp = std::string(texture_name, actual_len);
 
 	if (textures.find(texname_cmp) != textures.end()) {
 		return textures[texname_cmp];
 	}
-	LoadTexture(texname_cmp);
+	LoadTexture(texname_cmp, type);
 	return textures[texname_cmp];
 	return 0;
 }

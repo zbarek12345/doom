@@ -15,6 +15,7 @@
 #include <CDT.h>
 #include <climits>
 
+#include "headers/AnimatedEntity.h"
 #include "headers/vec2.h"
 
 
@@ -337,8 +338,40 @@ NewModels::Map *Parser::generateMap(int id) {
 			map->walls.push_back(wall);
 		}
 
-		printf("All Walls calculated;\n");
+		printf("All Walls calculated;\nLoading Entities;\n");
+
+		for (auto &thing : mp->things) {
+			Entity* entity = nullptr;
+			switch (thing.type) {
+				case 48:
+					entity = new SpaceShipEntity(svec2(thing.x,thing.y), tb->GetTexture("ELECA0", TextureType::ObstacleTexture));
+					break;
+				case 2014:
+					entity = new GlassOfWaterEntity(svec2(thing.x,thing.y),
+						std::vector<GLuint>({tb->GetTexture("BON1A0", TextureType::ItemTexture),
+												tb->GetTexture("BON1B0", TextureType::ItemTexture),
+												tb->GetTexture("BON1C0", TextureType::ItemTexture),
+												tb->GetTexture("BON1D0", TextureType::ItemTexture),
+												tb->GetTexture("BON1C0", TextureType::ItemTexture),
+												tb->GetTexture("BON1B0", TextureType::ItemTexture)
+						}));
+					break;
+				case 2028:
+					entity = new LampEntity(svec2(thing.x,thing.y), tb->GetTexture("COLUA0", TextureType::ObstacleTexture));
+					break;
+				case 2035:
+					entity = new BarrelEntity(svec2(thing.x,thing.y),
+							std::vector<GLuint>({tb->GetTexture("BAR1A0", TextureType::ObstacleTexture), tb->GetTexture("BAR1B0", TextureType::ObstacleTexture)}));
+
+			}
+			if (entity) {
+				NewModels::Sector* sec = map->getPlayerSector(svec2(thing.x,thing.y), nullptr);
+				entity->SetLimits(svec2(sec->floor_height, sec->ceil_height));
+				map->entities.push_back(entity);
+			}
+		}
 	}
+
 
 	return map;
 }

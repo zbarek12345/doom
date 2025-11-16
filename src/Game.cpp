@@ -83,7 +83,7 @@ void Game::Run() {
     double fps_time = 1.0f/fps;
     double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();
-    // SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     glViewport(0, 0, 800, 600);
     GLenum err = glGetError();
@@ -126,6 +126,8 @@ void Game::Run() {
             player->HandleEvent();
             player->Update(deltaTime);
         }
+
+        if (current_map) current_map->Update(deltaTime);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glLoadIdentity();

@@ -12,6 +12,8 @@
 #include <cstring>
 #include <set>
 #include <GL/gl.h>
+
+#include "Entity.h"
 #include "TexBinder.h"
 #include "vec2.h"
 #include "vec3.h"
@@ -121,41 +123,40 @@ namespace NewModels{
 			glBegin(GL_TRIANGLES);
 			for (auto& line: lines) {
 				// REVERSE ORDER for ceil: v3, v2, v1 -> CCW from below
-				auto p = nodes[line.v1]; glVertex3f(p.x, ceil_height, -p.y);
+				auto p = nodes[line.v1];
 				if (id==45 && !have_print)
 					printf("\n Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p);
+				BindTextureCoords(p); glVertex3f(p.x, ceil_height, -p.y);
 
-				p = nodes[line.v2]; glVertex3f(p.x, ceil_height, -p.y);
+				p = nodes[line.v2];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p);
+				BindTextureCoords(p); glVertex3f(p.x, ceil_height, -p.y);
 
-				p = nodes[line.v3]; glVertex3f(p.x, ceil_height, -p.y);
+				p = nodes[line.v3];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p);
-
+				BindTextureCoords(p); glVertex3f(p.x, ceil_height, -p.y);
 			}
 			glEnd();
 			// Floors (normal order)
 			glBindTexture(GL_TEXTURE_2D, floor_texture);
 			glBegin(GL_TRIANGLES);  // Move outside loop for efficiency
 			for (auto& line: lines) {
-				auto p = nodes[line.v3]; glVertex3f(p.x, floor_height, -p.y);
+				auto p = nodes[line.v3];
 				if (id==45 && !have_print)
 					printf("\n Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p);
+				BindTextureCoords(p); glVertex3f(p.x, floor_height, -p.y);
 
-				p = nodes[line.v2]; glVertex3f(p.x, floor_height, -p.y);
+				p = nodes[line.v2];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p);
+				BindTextureCoords(p); glVertex3f(p.x, floor_height, -p.y);
 
-				p = nodes[line.v1]; glVertex3f(p.x, floor_height, -p.y);
+				p = nodes[line.v1];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p);
+				BindTextureCoords(p); glVertex3f(p.x, floor_height, -p.y);
 			}
 			have_print = true;
 			glEnd();
@@ -667,9 +668,11 @@ namespace NewModels{
 		public:
 			std::vector<Sector> sectors;
     		std::vector<Wall*> walls;
+    		std::vector<Entity*> entities;
 			svec3 player_start = {0,0,0};
 			uint16_t player_start_angle;
 			TexBinder* texture_binder;
+    		fvec2 last_player_pos{};
 
 			Map() {
 			  texture_binder = new TexBinder();
@@ -677,14 +680,28 @@ namespace NewModels{
 
     		void Render() {
 				glEnable(GL_TEXTURE_2D);
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 				for (auto& wall : walls) {
 					wall->Render();
 				}
 
+
 				for (auto& sector : sectors) {
 					sector.Render();
 				}
+
+				for (auto& entity : entities) {
+					entity->Render(last_player_pos);
+				}
+				glDisable(GL_BLEND);
 				glDisable(GL_TEXTURE_2D);
+			}
+
+    		void Update(double deltaTime) {
+				for (auto& entity : entities) {
+					entity->Update(deltaTime);
+				}
 			}
 
     		Sector* getPlayerSector(svec2 pos, Sector* previousSector) {
@@ -757,6 +774,7 @@ namespace NewModels{
 					else
 						currentSector = next_sector;
 				}
+				last_player_pos = fvec2(player_pos.x, player_pos.z);
 			}
 
 

@@ -12,18 +12,20 @@
 #include "Entity.h"
 
 
-class AnimatedEntity : Entity {
+class AnimatedEntity : public Entity {
 private:
 	std::vector<GLuint>  textures;
 	uint8_t current_ = 0;
-	uint32_t swap_time=0;
-	const uint32_t swap_interval = 5e2;
+	double swap_time=0;
+	const double swap_interval = 2e-1;
 
 public:
-	AnimatedEntity(svec2 pos, svec2 size, const std::vector<GLuint> &textures);
+	AnimatedEntity(svec2 pos, svec2 size, std::vector<GLuint> textures, EntityPosType type = EntityPosType::Floor);
 
 	void Update(double deltaTime) override;
 };
 
+#define BarrelEntity(pos, textures) AnimatedEntity(pos, svec2(23, 32), textures, EntityPosType::Floor)
+#define GlassOfWaterEntity(pos, textures) AnimatedEntity(pos, svec2(14, 18), textures, EntityPosType::Floor)
 
 #endif //DOOM_ANIMATEDENTITY_H
