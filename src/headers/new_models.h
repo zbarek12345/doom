@@ -81,7 +81,11 @@ namespace NewModels{
 	};
 
 	class Sector{
+		const float tex_size = 64.f;
 	public:
+		GLuint floor_texture;
+		GLuint ceil_texture;
+
 		uint16_t id{};
 		int16_t ceil_height{}, floor_height{};
 		svec2 bounding_box[2];
@@ -98,40 +102,54 @@ namespace NewModels{
 			Floor,
 		};
 
+		void BindTextureCoords(svec2 coords) {
+			fvec2 diff = {coords.x/tex_size, coords.y/tex_size};
+
+			glTexCoord2f(diff.x, diff.y);
+		}
+
 		void Render() {
 			glEnable(GL_CULL_FACE);
 
 			glCullFace(GL_BACK);
 			///draw ceils
-			glColor3ub(0,255,0);
-
+			//glColor3ub(0,255,0);
+			auto refPoint = nodes[0];
+			glBindTexture(GL_TEXTURE_2D, ceil_texture);
 			for (auto& line: lines) {
 				glBegin(GL_TRIANGLES);
 				auto p = nodes[line.v1];
 				glVertex3s(p.x, ceil_height, -p.y);
+				BindTextureCoords(p);
 
 				p = nodes[line.v2];
 				glVertex3s(p.x, ceil_height, -p.y);
+				BindTextureCoords(p);
 
 				p = nodes[line.v3];
 				glVertex3s(p.x, ceil_height, -p.y);
+				BindTextureCoords(p);
 				glEnd();
-
 			}
+
 			glCullFace(GL_FRONT);
 			///draw floors
-			glColor3ub(255,0,0);
-
+			//glColor3ub(255,0,0);
+			glBindTexture(GL_TEXTURE_2D, floor_texture);
 			for (auto& line: lines) {
 				glBegin(GL_TRIANGLES);
 				auto p = nodes[line.v1];
 				glVertex3s(p.x, floor_height, -p.y);
+				BindTextureCoords(p);
 
 				p = nodes[line.v2];
 				glVertex3s(p.x, floor_height, -p.y);
+				BindTextureCoords(p);
 
 				p = nodes[line.v3];
 				glVertex3s(p.x, floor_height, -p.y);
+				BindTextureCoords(p);
+
 				glEnd();
 			}
 			glColor3ub(255, 255, 255);
@@ -149,6 +167,10 @@ namespace NewModels{
 			return false;
 		}
 
+		void bindTextures(GLuint floor_texture, GLuint ceil_texture) {
+			this->floor_texture = floor_texture;
+			this->ceil_texture = ceil_texture;
+		}
 
 		std::vector<Wall*>& GetWalls() {
 			return walls;
@@ -650,11 +672,11 @@ namespace NewModels{
 				for (auto& wall : walls) {
 					wall->Render();
 				}
-				glDisable(GL_TEXTURE_2D);
 
 				for (auto& sector : sectors) {
 					sector.Render();
 				}
+				glDisable(GL_TEXTURE_2D);
 			}
 
     		Sector* getPlayerSector(svec2 pos, Sector* previousSector) {

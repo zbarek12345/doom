@@ -148,9 +148,7 @@ NewModels::Map *Parser::generateMap(int id) {
 	printf("Linedef no. %llu\n Vertex no. %llu\n", mp->linedefs.size(), mp->vertexes.size());
 
 
-
 	auto map = new NewModels::Map(); {
-
 		///Find initial position of the player
 		for (auto &thing: mp->things) {
 			if (thing.type == 1) {
@@ -161,14 +159,14 @@ NewModels::Map *Parser::generateMap(int id) {
 		}
 
 		struct svec2_less {
-			constexpr bool operator()(const svec2& a, const svec2& b) const noexcept {
+			constexpr bool operator()(const svec2 &a, const svec2 &b) const noexcept {
 				return a.x != b.x ? a.x < b.x : a.y < b.y;
 			}
 		};
 
-		std::vector<std::set<svec2, svec2_less>> Nodes(mp->sectors.size());
+		std::vector<std::set<svec2, svec2_less> > Nodes(mp->sectors.size());
 		std::vector<std::vector<std::pair<uint16_t, uint16_t> > > Lines(mp->sectors.size());
-		std::vector<std::vector<uint16_t>> line_binding;
+		std::vector<std::vector<uint16_t> > line_binding;
 
 		uint16_t none = 0xFFFF;
 		for (auto &line: mp->linedefs) {
@@ -186,14 +184,17 @@ NewModels::Map *Parser::generateMap(int id) {
 		}
 
 		//printf("Lines loaded;\n");
-
+		auto tb = map->texture_binder;
 		map->sectors = std::vector<NewModels::Sector>(mp->sectors.size());
+
 		for (uint16_t i = 0; i < mp->sectors.size(); i++) {
 			printf("Calculating sector #%d;\n", i);
 			auto sector = &map->sectors[i];
+			auto sector_def = &mp->sectors[i];
 			sector->id = i;
-			sector->floor_height = mp->sectors[i].floor_height;
-			sector->ceil_height = mp->sectors[i].ceiling_height; {
+			sector->floor_height = sector_def->floor_height;
+			sector->ceil_height = sector_def->ceiling_height;
+			sector->bindTextures(tb->GetTexture(sector_def->floor_texture), tb->GetTexture(sector_def->ceiling_texture));{
 				std::vector<svec2> temp;
 				int16_t ceil = mp->sectors[i].ceiling_height, floor = mp->sectors[i].floor_height;
 
@@ -208,8 +209,8 @@ NewModels::Map *Parser::generateMap(int id) {
 					temp.push_back(node);
 				}
 
-				sector->bounding_box[0] = {min_x,min_y};
-				sector->bounding_box[1] = {max_x,max_y};
+				sector->bounding_box[0] = {min_x, min_y};
+				sector->bounding_box[1] = {max_x, max_y};
 
 				auto find_index = [&temp](const svec2 &pos) -> int {
 					for (size_t j = 0; j < temp.size(); ++j) {
@@ -226,7 +227,6 @@ NewModels::Map *Parser::generateMap(int id) {
 				std::vector<CDT::Edge> edges;
 				std::vector<uint16_t> edges_map(temp.size());
 				for (auto &line: Lines[i]) {
-
 					svec2 v1 = {mp->vertexes[line.first].x, mp->vertexes[line.first].y},
 							v2 = {mp->vertexes[line.second].x, mp->vertexes[line.second].y};
 
@@ -242,9 +242,10 @@ NewModels::Map *Parser::generateMap(int id) {
 				}
 
 
-				CDT::Triangulation<double> cdt = CDT::Triangulation<double>(CDT::VertexInsertionOrder::AsProvided, CDT::IntersectingConstraintEdges::TryResolve, 1.0);
-				std::vector<CDT::V2d<double>> vertices;
-				for (auto& vertex : temp ) {
+				CDT::Triangulation<double> cdt = CDT::Triangulation<double>(
+					CDT::VertexInsertionOrder::AsProvided, CDT::IntersectingConstraintEdges::TryResolve, 1.0);
+				std::vector<CDT::V2d<double> > vertices;
+				for (auto &vertex: temp) {
 					vertices.emplace_back(vertex.x, vertex.y);
 				}
 
@@ -257,11 +258,11 @@ NewModels::Map *Parser::generateMap(int id) {
 
 				for (auto &triangle: triangles) {
 					sector->lines.push_back(
-					NewModels::triangle{
-						(uint16_t)triangle.vertices[2],
-						(uint16_t)triangle.vertices[1],
-						(uint16_t)triangle.vertices[0]
-					});
+						NewModels::triangle{
+							(uint16_t) triangle.vertices[2],
+							(uint16_t) triangle.vertices[1],
+							(uint16_t) triangle.vertices[0]
+						});
 				}
 
 				sector->outer_edges = cdt.fixedEdges;
@@ -274,12 +275,11 @@ NewModels::Map *Parser::generateMap(int id) {
 			}
 		}
 		//printf("Sectors calculated;\n");
-		auto tb = map->texture_binder;
 		for (auto &line: mp->linedefs) {
 			auto right_sector_tag = line.sidedef[0];
-			auto left_sector_tag =  line.sidedef[1];
+			auto left_sector_tag = line.sidedef[1];
 
-			NewModels::Sector* right_sector = nullptr, * left_sector = nullptr;
+			NewModels::Sector *right_sector = nullptr, *left_sector = nullptr;
 			if (right_sector_tag != none)
 				right_sector = &map->sectors[mp->sidedefs[right_sector_tag].sector_tag];
 			if (left_sector_tag != none)
@@ -288,22 +288,22 @@ NewModels::Map *Parser::generateMap(int id) {
 			svec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 					v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 			auto wall = new NewModels::Wall(right_sector, left_sector);
-			wall->setCoordinates(v1,v2);
+			wall->setCoordinates(v1, v2);
 			wall->setFlag(line.flags);
 			///Right sector handling;
 			if (right_sector != nullptr) {
 				auto sd = &mp->sidedefs[line.sidedef[0]];
 				if (sd->upper_texture[0] != '-') {
 					auto tex = tb->GetTexture(sd->upper_texture);
-					wall->assignUpperTexture(0,tex);
+					wall->assignUpperTexture(0, tex);
 				}
 				if (sd->lower_texture[0] != '-') {
 					auto tex = tb->GetTexture(sd->lower_texture);
-					wall->assignLowerTexture(0,tex);
+					wall->assignLowerTexture(0, tex);
 				}
 				if (sd->middle_texture[0] != '-') {
 					auto tex = tb->GetTexture(sd->middle_texture);
-					wall->assignMiddleTexture(0,tex);
+					wall->assignMiddleTexture(0, tex);
 				}
 				if (line.special_type != 0) {
 					wall->assignSpecial(line.special_type);
@@ -313,18 +313,18 @@ NewModels::Map *Parser::generateMap(int id) {
 
 			if (left_sector != nullptr) {
 				auto sd = &mp->sidedefs[line.sidedef[1]];
-				wall->setCoordinates(v2,v1);
+				wall->setCoordinates(v2, v1);
 				if (sd->upper_texture[0] != '-') {
 					auto tex = tb->GetTexture(sd->upper_texture);
-					wall->assignUpperTexture(1,tex);
+					wall->assignUpperTexture(1, tex);
 				}
 				if (sd->lower_texture[0] != '-') {
 					auto tex = tb->GetTexture(sd->lower_texture);
-					wall->assignLowerTexture(1,tex);
+					wall->assignLowerTexture(1, tex);
 				}
 				if (sd->middle_texture[0] != '-') {
 					auto tex = tb->GetTexture(sd->middle_texture);
-					wall->assignMiddleTexture(1,tex);
+					wall->assignMiddleTexture(1, tex);
 				}
 				left_sector->bindWall(wall);
 				left_sector->neighbors.emplace(right_sector);
@@ -349,7 +349,6 @@ void Parser::testExport(int id, const char *filepath) {
 	uint16_t none = 0xFFFF;
 
 	for (auto &line: mp->linedefs) {
-
 		svec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 				v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 
@@ -358,7 +357,7 @@ void Parser::testExport(int id, const char *filepath) {
 		float dy = v2.y - v1.y;
 
 		if (line.special_type != 0)
-		printf("Line %u\n", line.special_type);
+			printf("Line %u\n", line.special_type);
 		// Calculate the perpendicular vector
 		float perpDx = -dy;
 		float perpDy = dx;
@@ -385,27 +384,27 @@ void Parser::testExport(int id, const char *filepath) {
 		if (crossProduct > 0) {
 			// The right line is actually on the right side
 			if (line.sidedef[0] != none)
-			rights.push_back(std::make_pair(
-				svec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
-				svec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
-			));
+				rights.push_back(std::make_pair(
+					svec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
+					svec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
+				));
 			if (line.sidedef[1] != none)
-			lefts.push_back(std::make_pair(
-				svec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
-				svec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
-			));
+				lefts.push_back(std::make_pair(
+					svec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
+					svec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
+				));
 		} else {
 			// The right line is on the left side (swap roles)
 			if (line.sidedef[1] != none)
-			rights.push_back(std::make_pair(
-				svec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
-				svec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
-			));
+				rights.push_back(std::make_pair(
+					svec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
+					svec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
+				));
 			if (line.sidedef[0] != none)
-			lefts.push_back(std::make_pair(
-				svec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
-				svec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
-			));
+				lefts.push_back(std::make_pair(
+					svec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
+					svec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
+				));
 		}
 	}
 	FILE *f = fopen(filepath, "w");
