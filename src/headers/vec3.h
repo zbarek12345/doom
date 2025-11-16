@@ -22,11 +22,11 @@ public:
 
     // Copy constructor & assignment (default is fine)
     constexpr vec3(const vec3&) noexcept = default;
-    constexpr vec3& operator=(const vec3&) noexcept = default;
+    vec3& operator=(const vec3&) noexcept = default;
 
     // Move constructor & assignment (default is fine)
     constexpr vec3(vec3&&) noexcept = default;
-    constexpr vec3& operator=(vec3&&) noexcept = default;
+    vec3& operator=(vec3&&) noexcept = default;
 
     // =============================================================
     // Conversion from different type
@@ -45,6 +45,7 @@ public:
     }
 
     // Swizzling (common useful ones)
+    constexpr vec3 xzy() const noexcept { return vec3(x, z, y); }
     constexpr vec3 yzx() const noexcept { return vec3(y, z, x); }
     constexpr vec3 zxy() const noexcept { return vec3(z, x, y); }
     constexpr vec3 xyz() const noexcept { return *this; }
@@ -147,12 +148,12 @@ public:
     static T distance(const vec3& a, const vec3& b) noexcept { return a.distance_to(b); }
 
     // Angle between two vectors (in radians)
-    T angle_to(const vec3& other) const noexcept {
-        T d = dot(other);
-        T len = length() * other.length();
-        if (len == T(0)) return T(0);
-        return std::acos(std::clamp(d / len, T(-1), T(1)));
-    }
+    // T angle_to(const vec3& other) const noexcept {
+    //     T d = dot(other);
+    //     T len = length() * other.length();
+    //     if (len == T(0)) return T(0);
+    //     return std::acos(std::clamp(d / len, T(-1), T(1)));
+    // }
 
     // Project this vector onto another
     vec3 project_onto(const vec3& onto) const noexcept {
@@ -206,27 +207,27 @@ std::ostream& operator<<(std::ostream& os, const vec3<T>& v) {
 // =============================================================
 // Specializations for float/double: slerp and refract
 // =============================================================
-template<typename T>
-vec3<T> vec3<T>::slerp(const vec3<T>& other, T t) const noexcept {
-    static_assert(std::is_floating_point_v<T>, "slerp only meaningful for floating point types");
-    T d = dot(other);
-    d = std::clamp(d, T(-1), T(1));
-    T theta = std::acos(d);
-    if (theta < T(1e-6)) return lerp(other, t);
-    T sin_theta = std::sin(theta);
-    T a = std::sin((T(1) - t) * theta) / sin_theta;
-    T b = std::sin(t * theta) / sin_theta;
-    return *this * a + other * b;
-}
+// template<typename T>
+// vec3<T> vec3<T>::slerp(const vec3<T>& other, T t) const noexcept {
+//     static_assert(std::is_floating_point<T>, "slerp only meaningful for floating point types");
+//     T d = dot(other);
+//     d = std::clamp(d, T(-1), T(1));
+//     T theta = std::acos(d);
+//     if (theta < T(1e-6)) return lerp(other, t);
+//     T sin_theta = std::sin(theta);
+//     T a = std::sin((T(1) - t) * theta) / sin_theta;
+//     T b = std::sin(t * theta) / sin_theta;
+//     return *this * a + other * b;
+// }
 
-template<typename T>
-vec3<T> vec3<T>::refract(const vec3<T>& normal, T eta) const noexcept {
-    static_assert(std::is_floating_point_v<T>, "refract only meaningful for floating point");
-    T n_dot_i = dot(normal);
-    T k = T(1) - eta * eta * (T(1) - n_dot_i * n_dot_i);
-    if (k < T(0)) return vec3<T>(0);
-    return *this * eta - normal * (eta * n_dot_i + std::sqrt(k));
-}
+// template<typename T>
+// vec3<T> vec3<T>::refract(const vec3<T>& normal, T eta) const noexcept {
+//     static_assert(std::is_floating_point<T>, "refract only meaningful for floating point");
+//     T n_dot_i = dot(normal);
+//     T k = T(1) - eta * eta * (T(1) - n_dot_i * n_dot_i);
+//     if (k < T(0)) return vec3<T>(0);
+//     return *this * eta - normal * (eta * n_dot_i + std::sqrt(k));
+// }
 
 // Common typedefs
 using fvec3 = vec3<float>;

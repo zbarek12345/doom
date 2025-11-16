@@ -3,9 +3,9 @@
 
 #define M_PI 3.14159265358979323846
 
-Player::Player(NewModels::vec3 position, float angle, NewModels::Map* map) {
+Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	this->position = position;
-	pos = NewModels::fvec3(position).DoomInvert();
+	pos = fvec3(position).xzy();
 	this->camera = new Camera(angle);
 
 	this->new_map = map;
@@ -21,9 +21,9 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 	float yaw_rad = camera->GetYaw() * M_PI / 180.0f;
 
 
-	NewModels::fvec3 forward(sinf(yaw_rad), 0.0f, cosf(yaw_rad));
-	NewModels::fvec3 right(cosf(yaw_rad), 0.0f, -sinf(yaw_rad));
-	NewModels::fvec3 vertical(0.0f, 1.0f, 0.0f);
+	fvec3 forward(sinf(yaw_rad), 0.0f, cosf(yaw_rad));
+	fvec3 right(cosf(yaw_rad), 0.0f, -sinf(yaw_rad));
+	fvec3 vertical(0.0f, 1.0f, 0.0f);
 
 	float move_forward = 0.0f, move_strafe = 0.0f, move_vertical = 0.0f;
 	if (keys[SDL_SCANCODE_W]) move_forward += speed;
@@ -34,7 +34,7 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= speed;
 
 
-	movement_vector =movement_vector+ ( forward * move_forward + right * move_strafe);
+	movement_vector = movement_vector + ( forward * move_forward + right * move_strafe);
 
 
 }
@@ -42,10 +42,10 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 void Player::Update(double deltaTime) {
 	float speed = 50.0f * deltaTime;
 	//Update player's postion only once;
-	movement_vector = movement_vector.normalize()*(200.*deltaTime);
+	movement_vector = movement_vector.normalized()*(200.*deltaTime);
 	new_map->HandleMovement(movement_vector, pos, current_sector);
 	pos.y = current_sector->floor_height + 46;
-	movement_vector.clear();
+	movement_vector = fvec3::zero;
 }
 
 void Player::Render() {

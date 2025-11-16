@@ -14,6 +14,8 @@
 #include <unordered_set>
 #include <CDT.h>
 
+#include "headers/vec2.h"
+
 
 ///Helper function to compare the lump names
 bool compareLumpName(const char *lump1, const char *lump2) {
@@ -141,8 +143,6 @@ cleanup:
 	throw std::runtime_error("Error parsing file");
 }
 
-//NewModels::Map *Parser::generateMap(int id) {return nullptr;};
-
 NewModels::Map *Parser::generateMap(int id) {
 	auto *mp = content->maps[id];
 	printf("Linedef no. %llu\n Vertex no. %llu\n", mp->linedefs.size(), mp->vertexes.size());
@@ -160,14 +160,21 @@ NewModels::Map *Parser::generateMap(int id) {
 			}
 		}
 
-		std::vector<std::set<NewModels::vec2> > Nodes(mp->sectors.size());
+		struct svec2_less {
+			constexpr bool operator()(const svec2& a, const svec2& b) const noexcept {
+				return a.x != b.x ? a.x < b.x : a.y < b.y;
+			}
+		};
+
+		std::vector<std::set<svec2, svec2_less>> Nodes(mp->sectors.size());
 		std::vector<std::vector<std::pair<uint16_t, uint16_t> > > Lines(mp->sectors.size());
 		std::vector<std::vector<uint16_t>> line_binding;
+
 		uint16_t none = 0xFFFF;
 		for (auto &line: mp->linedefs) {
 			for (int i = 0; i < 2; i++) {
 				if (line.sidedef[i] != none) {
-					NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
+					svec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 							v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 					auto sector = mp->sidedefs[line.sidedef[i]].sector_tag;
 					Nodes[sector].insert(v1);
@@ -187,7 +194,7 @@ NewModels::Map *Parser::generateMap(int id) {
 			sector->id = i;
 			sector->floor_height = mp->sectors[i].floor_height;
 			sector->ceil_height = mp->sectors[i].ceiling_height; {
-				std::vector<NewModels::vec2> temp;
+				std::vector<svec2> temp;
 				int16_t ceil = mp->sectors[i].ceiling_height, floor = mp->sectors[i].floor_height;
 
 				int16_t min_x = SHRT_MAX, min_y = SHRT_MAX, max_x = SHRT_MIN, max_y = SHRT_MIN;
@@ -204,7 +211,7 @@ NewModels::Map *Parser::generateMap(int id) {
 				sector->bounding_box[0] = {min_x,min_y};
 				sector->bounding_box[1] = {max_x,max_y};
 
-				auto find_index = [&temp](const NewModels::vec2 &pos) -> int {
+				auto find_index = [&temp](const svec2 &pos) -> int {
 					for (size_t j = 0; j < temp.size(); ++j) {
 						if (temp[j] == pos) {
 							return static_cast<int>(j);
@@ -220,7 +227,7 @@ NewModels::Map *Parser::generateMap(int id) {
 				std::vector<uint16_t> edges_map(temp.size());
 				for (auto &line: Lines[i]) {
 
-					NewModels::vec2 v1 = {mp->vertexes[line.first].x, mp->vertexes[line.first].y},
+					svec2 v1 = {mp->vertexes[line.first].x, mp->vertexes[line.first].y},
 							v2 = {mp->vertexes[line.second].x, mp->vertexes[line.second].y};
 
 					auto p1 = find_index(v1);
@@ -278,7 +285,7 @@ NewModels::Map *Parser::generateMap(int id) {
 			if (left_sector_tag != none)
 				left_sector = &map->sectors[mp->sidedefs[left_sector_tag].sector_tag];
 
-			NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
+			svec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 					v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 			auto wall = new NewModels::Wall(right_sector, left_sector);
 			wall->setCoordinates(v1,v2);
@@ -333,21 +340,17 @@ NewModels::Map *Parser::generateMap(int id) {
 	return map;
 }
 
-struct fvec2 {
-	float x, y;
-};
-
 void Parser::testExport(int id, const char *filepath) {
 	auto mp = content->maps[id];
 
-	std::vector<std::pair<NewModels::vec2, NewModels::vec2> > vertices;
-	std::vector<std::pair<NewModels::vec2, NewModels::vec2> > lefts;
-	std::vector<std::pair<NewModels::vec2, NewModels::vec2> > rights;
+	std::vector<std::pair<svec2, svec2> > vertices;
+	std::vector<std::pair<svec2, svec2> > lefts;
+	std::vector<std::pair<svec2, svec2> > rights;
 	uint16_t none = 0xFFFF;
 
 	for (auto &line: mp->linedefs) {
 
-		NewModels::vec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
+		svec2 v1 = {mp->vertexes[line.v1].x, mp->vertexes[line.v1].y},
 				v2 = {mp->vertexes[line.v2].x, mp->vertexes[line.v2].y};
 
 		vertices.push_back(std::make_pair(v1, v2)); // Calculate the vector from v1 to v2
@@ -383,25 +386,25 @@ void Parser::testExport(int id, const char *filepath) {
 			// The right line is actually on the right side
 			if (line.sidedef[0] != none)
 			rights.push_back(std::make_pair(
-				NewModels::vec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
-				NewModels::vec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
+				svec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
+				svec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
 			));
 			if (line.sidedef[1] != none)
 			lefts.push_back(std::make_pair(
-				NewModels::vec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
-				NewModels::vec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
+				svec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
+				svec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
 			));
 		} else {
 			// The right line is on the left side (swap roles)
 			if (line.sidedef[1] != none)
 			rights.push_back(std::make_pair(
-				NewModels::vec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
-				NewModels::vec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
+				svec2{static_cast<int16_t>(right1.x), static_cast<int16_t>(right1.y)},
+				svec2{static_cast<int16_t>(right2.x), static_cast<int16_t>(right2.y)}
 			));
 			if (line.sidedef[0] != none)
 			lefts.push_back(std::make_pair(
-				NewModels::vec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
-				NewModels::vec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
+				svec2{static_cast<int16_t>(left1.x), static_cast<int16_t>(left1.y)},
+				svec2{static_cast<int16_t>(left2.x), static_cast<int16_t>(left2.y)}
 			));
 		}
 	}
@@ -438,7 +441,7 @@ void Parser::testExport(int id, const char *filepath) {
 	fclose(f);
 }
 
-void Parser::find_sector(int id, NewModels::vec3 vertex) {
+void Parser::find_sector(int id, svec3 vertex) {
 	auto map = generateMap(id);
 	// for (int i = 0; i < map->sectors.size(); i++) {
 	// 	for (auto &floor_p: map->sectors[i].floor) {

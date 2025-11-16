@@ -10,196 +10,21 @@
 #include <CDTUtils.h>
 #include <set>
 #include <gl/gl.h>
-
-#include "new_models.h"
 #include "TexBinder.h"
+#include "vec2.h"
+#include "vec3.h"
 
 namespace NewModels{
-	struct fvec3;
 	class Wall;
 	struct triangle;
 	class Sector;
 #define TEX_MULTIPLIER 8
 
-	struct vec2 {
-		int16_t x, y;
-
-		bool operator<(vec2 other) const {
-			if (x == other.x)
-				return y < other.y;
-			return x < other.x;
-		}
-
-		bool operator==(vec2 other) const {
-			return x == other.x && y == other.y;
-		}
-	};
-
 	struct triangle {
 		uint16_t v1, v2, v3;
 	};
 
-	struct vec3 {
-		int16_t x, y, z;
-		bool operator==(const vec3& other) const {
-			return  x == other.x &&
-					y == other.y &&
-					z == other.z;
-		}
-		vec3() {
-		}
-
-		vec3(vec2 v2) {
-			x = v2.x;
-			y = v2.y;
-			z = 0;
-		}
-
-		vec3(vec2 v2, int16_t z) {
-			x = v2.x;
-			y = v2.y;
-			this->z = z;
-		}
-
-		vec3(int16_t x,int16_t y, int16_t z) {
-			this->x = x;
-			this->y = y;
-			this->z = z;
-		}
-
-		vec3 operator+(const vec3& other) const {
-			return {
-			(int16_t)(x + other.x), (int16_t)(y + other.y), (int16_t)(z + other.z)};
-		}
-
-		vec3 operator-(const vec3& other) const {
-			return {
-				(int16_t)(x - other.x), (int16_t)(y - other.y), (int16_t)(z - other.z)};
-		}
-
-		vec3 DoomInvert()const {
-			return {x, z, y};
-		}
-	};
-
-	struct fvec2 {
-		float x, y;
-
-		bool operator==(const fvec2& other) const {
-			return  x == other.x &&
-					y == other.y;
-		}
-
-		fvec2 operator*(fvec2& other){
-			return {x * other.x, y * other.y};
-		}
-
-		fvec2 operator*(float mag) const {
-			return {x * mag, y * mag};
-		}
-
-		fvec2 perpendicular() const {
-			return {-y, x};
-		}
-
-		fvec2 normalize() const {
-			float mag = sqrt(x * x + y * y);
-			return fvec2{x/mag, y/mag};
-		}
-
-		float length() const {
-			return sqrt(x * x + y * y);
-		}
-	};
-	struct fvec3 {
-		float x, y, z;
-		bool operator==(const fvec3& other) const {
-			return  x == other.x &&
-					y == other.y &&
-					z == other.z;
-		}
-
-		fvec3() {
-		}
-
-		fvec3(vec3 vs) {
-			x = vs.x;
-			y = vs.y;
-			z = vs.z;
-		}
-
-		fvec3(float x, float y, float z) {
-			this->x = x;
-			this->y = y;
-			this->z = z;
-		}
-
-		fvec3 operator+(fvec3& other) const{
-			return {x + other.x, y + other.y, z + other.z};
-		}
-
-		fvec3 operator+(const fvec3& other) const {
-			return {x + other.x, y + other.y, z + other.z};
-		}
-
-		fvec3 operator-(fvec3& other) const{
-			return {x - other.x, y - other.y, z - other.z};
-		}
-
-		fvec3 operator-(const fvec3& other) const {
-			return {x - other.x, y - other.y, z - other.z};
-		}
-
-		fvec3 operator*(float scalar) const {
-			return {x * scalar, y * scalar, z * scalar};
-		}
-
-		fvec3 normalize() const {
-			float mag = sqrt(x * x + y * y + z * z);
-			if (mag == 0) return {0,0,0};
-			return {x/mag, y/mag, z/mag};
-		}
-
-		float length() const {
-			return sqrt(x * x + y * y + z * z);
-		}
-
-		fvec3 cross( fvec3 v2) const {
-			return {x*v2.z - z*v2.y,
-						z*v2.x - x*v2.z,
-						x*v2.y-y*v2.x};
-		}
-
-		float dot(fvec3 v2) const {
-			return x*v2.x + y*v2.y + z*v2.z;
-		}
-
-		static float dot(fvec3 v1, fvec3 v2) {
-			return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-		}
-
-		bool zero() const {
-			return x == 0 && y == 0 && z == 0;
-		}
-
-		void clear(){
-			x = y = z = 0;
-		}
-
-		fvec3 DoomInvert() const {
-			return {x, z, y};
-		}
-
-		fvec3 perpendicular() const {
-			return {y, -z, x};
-		}
-
-		vec3 to_vec3()const {
-			return vec3{(short)round(x), (short)round(y), (short)round(z)};
-		}
-	};
-
-	inline bool isInTriangle(vec3 vert1, vec3 vert2, vec3 vert3, fvec3 point) {
+	inline bool isInTriangle(svec3 vert1, svec3 vert2, svec3 vert3, fvec3 point) {
 		// Convert vertices to float for precision
 		fvec3 v1 = fvec3((float)vert1.x, (float)vert1.y, (float)vert1.z);
 		fvec3 v2 = fvec3((float)vert2.x, (float)vert2.y, (float)vert2.z);
@@ -259,8 +84,8 @@ namespace NewModels{
 	public:
 		uint16_t id{};
 		int16_t ceil_height{}, floor_height{};
-		vec2 bounding_box[2];
-		std::vector<vec2> nodes;
+		svec2 bounding_box[2];
+		std::vector<svec2> nodes;
 		std::vector<triangle> lines;
 
 		CDT::EdgeUSet outer_edges;
@@ -313,18 +138,17 @@ namespace NewModels{
 			glDisable(GL_CULL_FACE);
 		}
 
-		bool isInSector(vec3 pos) {
+		bool isInSector(fvec3 pos) {
 			if (pos.x < bounding_box[0].x || pos.x > bounding_box[1].x || pos.y < bounding_box[0].y || pos.y>bounding_box[1].y) return false;
 
 			for (auto& triangle : lines) {
-				if (isInTriangle(nodes[triangle.v1], nodes[triangle.v2], nodes[triangle.v3], pos)) return true;
+				if (isInTriangle(svec3(nodes[triangle.v1].x,nodes[triangle.v1].y, 0),
+					svec3(nodes[triangle.v2].x,nodes[triangle.v2].y, 0),
+					svec3(nodes[triangle.v3].x,nodes[triangle.v3].y, 0), pos)) return true;
 			}
 			return false;
 		}
 
-		bool isInSectorInv(vec3 pos) {
-			return isInSector(pos.DoomInvert());
-		}
 
 		std::vector<Wall*>& GetWalls() {
 			return walls;
@@ -372,7 +196,7 @@ namespace NewModels{
 		uint16_t sector_tag;
 
 		struct coordinates {
-			vec2 v1, v2;
+			svec2 v1, v2;
 		}coordinates_;
 	public:
 		Wall(Sector* this_sector, Sector* other_sector) : this_sector(this_sector), other_sector(other_sector) {
@@ -386,7 +210,7 @@ namespace NewModels{
 			special_type = 0;
 		}
 
-		void setCoordinates(vec2 v1, vec2 v2) {
+		void setCoordinates(svec2 v1, svec2 v2) {
 			coordinates_.v1 = v1;
 			coordinates_.v2 = v2;
 		}
@@ -419,17 +243,18 @@ namespace NewModels{
 		void* getSpecial(special_activator_type type);
 
 		fvec3 getPlanePoint() {
-			return fvec3(coordinates_.v1.x, coordinates_.v1.y,this_sector->floor_height).DoomInvert();
+			return fvec3(coordinates_.v1.x, coordinates_.v1.y,this_sector->floor_height).xzy();
 		}
 
 		fvec3 getPlaneNormal() {
 			int16_t sectH = this_sector->ceil_height, sectL = this_sector->floor_height;
-			vec3 p1 = {coordinates_.v1.x,coordinates_.v1.y,sectH}, p2={coordinates_.v1.x,coordinates_.v1.y,sectL}, p3={coordinates_.v2.x,coordinates_.v2.y,sectL};
-			p1 = p1.DoomInvert(); p2 = p2.DoomInvert(); p3 = p3.DoomInvert();
+			svec3 p1 = {coordinates_.v1.x,coordinates_.v1.y,sectH}, p2={coordinates_.v1.x,coordinates_.v1.y,sectL}, p3={coordinates_.v2.x,coordinates_.v2.y,sectL};
+			p1 = p1.xzy(); p2 = p2.xzy(); p3 = p3.xzy();
 			fvec3 v1 = fvec3(p2-p1), v2 = fvec3(p3-p1);
 
 			fvec3 cross = v1.cross(v2);
-			return cross.normalize();
+			cross.normalize();
+			return cross;
 		}
 
 		bool Intersects(fvec3 point) {
@@ -444,16 +269,23 @@ namespace NewModels{
 				highest = this_sector->ceil_height;
 			}
 
-			bool t1 = isInTriangle(vec3(coordinates_.v1, highest).DoomInvert(), vec3(coordinates_.v2, highest).DoomInvert(), vec3(coordinates_.v2, lowest).DoomInvert(), point);
-			bool t2 = isInTriangle(vec3(coordinates_.v1, highest).DoomInvert(), vec3(coordinates_.v2, lowest).DoomInvert(), vec3(coordinates_.v1, lowest).DoomInvert(), point);
+			bool t1 = isInTriangle(svec3(coordinates_.v1.x, coordinates_.v1.y, highest).xzy(),
+						svec3(coordinates_.v2.x,coordinates_.v2.y, highest).xzy(),
+						svec3(coordinates_.v2.x,coordinates_.v2.y, lowest).xzy(),
+						point);
+
+			bool t2 = isInTriangle(svec3(coordinates_.v1.x, coordinates_.v1.y, highest).xzy(),
+									svec3(coordinates_.v2.x, coordinates_.v2.y, lowest).xzy(),
+									svec3(coordinates_.v1.x, coordinates_.v1.y, lowest).xzy(), point);
+
 			return t1 || t2;
 		}
 
 		void Render() {
             if (!this_sector) return;
 
-            vec2 v1 = coordinates_.v1;
-            vec2 v2 = coordinates_.v2;
+            svec2 v1 = coordinates_.v1;
+            svec2 v2 = coordinates_.v2;
 
             float wall_len = std::sqrt(std::pow(v2.x - v1.x, 2) + std::pow(v2.y - v1.y, 2)) * TEX_MULTIPLIER;
 
@@ -485,7 +317,7 @@ namespace NewModels{
 
                 // Render lower if this floor > other floor and texture assigned
                 if (wall_tests.lower_wall[0] || wall_tests.lower_wall[1]) {
-                	vec2 v1,v2;
+                	svec2 v1,v2;
                 	Sector* this_sector, *other_sector;
                 	GLuint lower_texture;
                 	bool isTexture;
@@ -543,7 +375,7 @@ namespace NewModels{
                 // Render upper if this ceil < other ceil and texture assigned
                 if (wall_tests.upper_wall[0] || wall_tests.upper_wall[1]) {
 
-                	vec2 v1,v2;
+                	svec2 v1,v2;
                 	Sector* this_sector, *other_sector;
                 	GLuint upper_texture;
                 	int16_t xoffset, yoffset;
@@ -606,7 +438,7 @@ namespace NewModels{
 	                for (int side = 0; side < 2; side++) {
 		                if (!wall_tests.middle_wall[side]) continue;
 
-		                vec2 v1, v2;
+		                svec2 v1, v2;
 		                GLuint texture;
 		                int16_t xoffset, yoffset;
 
@@ -693,7 +525,7 @@ namespace NewModels{
 			WalkSide,
 		};
 
-		static float PlaneIntersectionDistance(Wall* wall, fvec3 vector, vec3 startingPoint, float maxDist) {
+		static float PlaneIntersectionDistance(Wall* wall, fvec3 vector, svec3 startingPoint, float maxDist) {
 			fvec3 planePoint = wall->getPlanePoint();
 			fvec3 normal = wall->getPlaneNormal();
 			float bottom = normal.dot(vector);
@@ -706,27 +538,27 @@ namespace NewModels{
 
 			if (distance > maxDist || distance < 0)
 				return SHRT_MAX;
-			fvec3 intersectionPoint = fvec3(startingPoint)+(vector.normalize()*distance);
+			fvec3 intersectionPoint = fvec3(startingPoint)+(vector.normalized()*distance);
 
 			if (wall->Intersects(intersectionPoint))
 				return distance;
 			return SHRT_MAX;
 		}
 
-		static float CalculateVectorCeilDist(fvec3 normalizedVector, Sector* sector, vec3 startingPoint) {
+		static float CalculateVectorCeilDist(fvec3 normalizedVector, Sector* sector, svec3 startingPoint) {
 			float ceilHeight = floor(sector->ceil_height);
 			float dist = (ceilHeight - startingPoint.y)/normalizedVector.y;
 			return dist;
 		}
 
-		static float CalculateVectorFloorDist(fvec3 normalizedVector, Sector* sector, vec3 startingPoint) {
+		static float CalculateVectorFloorDist(fvec3 normalizedVector, Sector* sector, svec3 startingPoint) {
 			float ceilHeight = floor(sector->floor_height);
 			float dist = (ceilHeight - startingPoint.y)/normalizedVector.y;
 			return dist;
 		}
 
-		static vec3 PerformRayCast(fvec3& vector, Sector*& currentSector, vec3 startingPoint, RayType rayType, bool& target_hit) {
-			fvec3 normalizedVector = vector.normalize();
+		static fvec3 PerformRayCast(fvec3& vector, Sector*& currentSector, svec3 startingPoint, RayType rayType, bool& target_hit) {
+			fvec3 normalizedVector = vector.normalized();
 			float vectorLength = vector.length();
 
 			Wall* intersectionWall;
@@ -765,7 +597,7 @@ namespace NewModels{
 					}
 				}
 
-				return vec3(res.x, res.y,res.z);
+				return fvec3(res.x, res.y,res.z);
 			}
 
 			else {
@@ -779,21 +611,21 @@ namespace NewModels{
 					auto restVector = fvec3(0,0,0);
 					vector = restVector;
 					target_hit = false;
-					return startingPoint + vec3(round(vector.x), round(vector.y), round(vector.z));
+					return (fvec3)startingPoint + fvec3(round(vector.x), round(vector.y), round(vector.z));
 				}
 
 				if (floorCeilIntersection < intersectionDist) {
 					auto distVector = normalizedVector * floorCeilIntersection;
 					target_hit = true;
 					vector =  distVector;
-					return startingPoint + vec3(round(distVector.x), round(distVector.y), round(distVector.z));
+					return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
 				}
 
 				auto distVector = normalizedVector * intersectionDist;
 				auto restVector = normalizedVector * (vectorLength - intersectionDist);
 				target_hit = false;
 				vector = restVector;
-				return startingPoint + vec3(round(distVector.x), round(distVector.y), round(distVector.z));
+				return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
 			}
 
 
@@ -805,7 +637,7 @@ namespace NewModels{
 		public:
 			std::vector<Sector> sectors;
     		std::vector<Wall*> walls;
-			vec3 player_start = {0,0,0};
+			svec3 player_start = {0,0,0};
 			uint16_t player_start_angle;
 			TexBinder* texture_binder;
 
@@ -814,29 +646,31 @@ namespace NewModels{
 			}
 
     		void Render() {
+				glEnable(GL_TEXTURE_2D);
 				for (auto& wall : walls) {
 					wall->Render();
 				}
+				glDisable(GL_TEXTURE_2D);
 
 				for (auto& sector : sectors) {
 					sector.Render();
 				}
 			}
 
-    		Sector* getPlayerSector(vec2 pos, Sector* previousSector) {
+    		Sector* getPlayerSector(svec2 pos, Sector* previousSector) {
 					if (previousSector == nullptr) {
 						getSector:
-						vec3 pos3 = vec3(pos,0);
+						svec3 pos3 = svec3(pos.x, pos.y,0);
 						for (auto& sector : sectors) {
-							if (sector.isInSector(pos3))
+							if (sector.isInSector(static_cast<fvec3>(pos3)))
 								return &sector;
 						}
 						return nullptr;
 					}
-					if (previousSector->isInSector(pos))
+					if (previousSector->isInSector(fvec3(pos.x, pos.y,0.)))
 						return previousSector;
 					for( auto& sec : previousSector->neighbors)
-						if (sec->isInSector(pos))
+						if (sec->isInSector(fvec3(pos.x, pos.y,0.)))
 							return sec;
 					goto getSector;
 			}
@@ -844,18 +678,18 @@ namespace NewModels{
 			void HandleMovement(fvec3& move, fvec3& player_pos, Sector*& currentSector) {
 				bool target_hit;
 				fvec3 player_pos_save;
-				while (!move.zero()) {
-					fvec3 p_pos = vec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
-					player_pos_save = player_pos.to_vec3();
+				while (!move.is_zero()) {
+					fvec3 p_pos = fvec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
+					player_pos_save = player_pos;
 					fvec3 perpendicular = fvec3{-move.z, 0, move.x};
-					perpendicular = perpendicular.normalize()*2;
+					perpendicular = perpendicular.normalized()*2;
 
 					fvec3 p_pos_2 = p_pos + perpendicular;
 					fvec3 p_pos_3 = p_pos - perpendicular;
 					fvec3 mv1 = move, mv2 = move, mv3=move;
-					p_pos = RayCaster::PerformRayCast(mv1, currentSector, p_pos.to_vec3(), RayCaster::Walk, target_hit);
-					p_pos_2 = RayCaster::PerformRayCast(mv2, currentSector, p_pos_2.to_vec3(), RayCaster::WalkSide, target_hit);
-					p_pos_3 = RayCaster::PerformRayCast(mv3, currentSector, p_pos_3.to_vec3(), RayCaster::WalkSide, target_hit);
+					p_pos = RayCaster::PerformRayCast(mv1, currentSector, (svec3)p_pos, RayCaster::Walk, target_hit);
+					p_pos_2 = RayCaster::PerformRayCast(mv2, currentSector, (svec3)p_pos_2, RayCaster::WalkSide, target_hit);
+					p_pos_3 = RayCaster::PerformRayCast(mv3, currentSector, (svec3)p_pos_3, RayCaster::WalkSide, target_hit);
 
 					p_pos_2 =p_pos_2 - perpendicular;
 					p_pos_3 =p_pos_3 + perpendicular;
@@ -876,7 +710,7 @@ namespace NewModels{
 						player_pos = p_pos_3;
 						move = mv3;
 					}
-					vec3 p_pos_s = player_pos.to_vec3();
+					svec3 p_pos_s = (svec3)player_pos;
 					auto next_sector = getPlayerSector({p_pos_s.x, p_pos_s.z}, currentSector);
 					if (next_sector == nullptr)
 						player_pos = player_pos_save;

@@ -65,7 +65,7 @@ void Game::SelectMap(int id) {
     current_map = parser->generateMap(id);
     if (current_map && current_map->player_start.x != 0 && current_map->player_start.y != 0) {
         // Start above the floor (assuming z is height)
-        NewModels::vec3 start_pos = current_map->player_start;
+        svec3 start_pos = current_map->player_start;
         printf("Player start: %hd, %hd, %hd\nAngle: %d", start_pos.x, start_pos.y, start_pos.z, current_map->player_start_angle);
         start_pos.z += 10; // Adjust based on typical sector height
         player = new Player(start_pos, current_map->player_start_angle, current_map); // Match map's angle if available
