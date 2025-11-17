@@ -11,8 +11,6 @@
 #include <climits>
 #include <cstring>
 #include <set>
-#include <GL/gl.h>
-
 #include "Entity.h"
 #include "TexBinder.h"
 #include "vec2.h"
@@ -86,10 +84,9 @@ namespace NewModels{
 	};
 
 	class Sector{
-		const float tex_size = 64.f;
 	public:
-		GLuint floor_texture;
-		GLuint ceil_texture;
+		gl_texture floor_texture;
+		gl_texture ceil_texture;
 
 		uint16_t id{};
 		int16_t ceil_height{}, floor_height{};
@@ -108,8 +105,8 @@ namespace NewModels{
 			Floor,
 		};
 
-		void BindTextureCoords(svec2 coords) {
-			fvec2 diff = {coords.x/tex_size, coords.y/tex_size};
+		void BindTextureCoords(svec2 coords, gl_texture* texture) {
+			fvec2 diff = {float(coords.x/texture->w), float(coords.y/texture->h)};
 			if (id==45 && !have_print)
 				printf(" Tex Coords : (%f %f)\n", diff.x, -diff.y);
 			glTexCoord2f(diff.x, -diff.y);
@@ -119,44 +116,44 @@ namespace NewModels{
 			glEnable(GL_CULL_FACE);
 			glCullFace(GL_BACK);  // Standard: cull backs for both
 			// Ceilings
-			glBindTexture(GL_TEXTURE_2D, ceil_texture);
+			glBindTexture(GL_TEXTURE_2D, ceil_texture.texture_id);
 			glBegin(GL_TRIANGLES);
 			for (auto& line: lines) {
 				// REVERSE ORDER for ceil: v3, v2, v1 -> CCW from below
 				auto p = nodes[line.v1];
 				if (id==45 && !have_print)
 					printf("\n Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p); glVertex3f(p.x, ceil_height, -p.y);
+				BindTextureCoords(p, &ceil_texture); glVertex3f(p.x, ceil_height, -p.y);
 
 				p = nodes[line.v2];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p); glVertex3f(p.x, ceil_height, -p.y);
+				BindTextureCoords(p, &ceil_texture); glVertex3f(p.x, ceil_height, -p.y);
 
 				p = nodes[line.v3];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p); glVertex3f(p.x, ceil_height, -p.y);
+				BindTextureCoords(p, &ceil_texture); glVertex3f(p.x, ceil_height, -p.y);
 			}
 			glEnd();
 			// Floors (normal order)
-			glBindTexture(GL_TEXTURE_2D, floor_texture);
+			glBindTexture(GL_TEXTURE_2D, floor_texture.texture_id);
 			glBegin(GL_TRIANGLES);  // Move outside loop for efficiency
 			for (auto& line: lines) {
 				auto p = nodes[line.v3];
 				if (id==45 && !have_print)
 					printf("\n Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p); glVertex3f(p.x, floor_height, -p.y);
+				BindTextureCoords(p, &floor_texture); glVertex3f(p.x, floor_height, -p.y);
 
 				p = nodes[line.v2];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p); glVertex3f(p.x, floor_height, -p.y);
+				BindTextureCoords(p, &floor_texture); glVertex3f(p.x, floor_height, -p.y);
 
 				p = nodes[line.v1];
 				if (id==45 && !have_print)
 					printf(" Real Coords : (%hd %hd)", p.x, -p.y);
-				BindTextureCoords(p); glVertex3f(p.x, floor_height, -p.y);
+				BindTextureCoords(p, &floor_texture); glVertex3f(p.x, floor_height, -p.y);
 			}
 			have_print = true;
 			glEnd();
@@ -174,7 +171,7 @@ namespace NewModels{
 			return false;
 		}
 
-		void bindTextures(GLuint floor_texture, GLuint ceil_texture) {
+		void bindTextures(gl_texture floor_texture, gl_texture ceil_texture) {
 			this->floor_texture = floor_texture;
 			this->ceil_texture = ceil_texture;
 		}
@@ -217,9 +214,9 @@ namespace NewModels{
 		}wall_tests;
 		uint16_t special_type;
 
-		GLuint lower_texture[2];
-		GLuint middle_texture[2];
-		GLuint upper_texture[2];
+		gl_texture lower_texture[2];
+		gl_texture middle_texture[2];
+		gl_texture upper_texture[2];
 
 		int16_t offsets[4];
 		uint16_t sector_tag;
@@ -244,17 +241,17 @@ namespace NewModels{
 			coordinates_.v2 = v2;
 		}
 
-		void assignLowerTexture(int id, GLuint texture) {
+		void assignLowerTexture(int id, gl_texture texture) {
 			lower_texture[id] = texture;
 			wall_tests.lower_wall[id] = true;
 		}
 
-		void assignMiddleTexture(int id,GLuint texture) {
+		void assignMiddleTexture(int id, gl_texture texture) {
 			middle_texture[id] = texture;
 			wall_tests.middle_wall[id] = true;
 		}
 
-		void assignUpperTexture(int id, GLuint texture) {
+		void assignUpperTexture(int id, gl_texture texture) {
 			upper_texture[id] = texture;
 			wall_tests.upper_wall[id] = true;
 		}
@@ -316,24 +313,21 @@ namespace NewModels{
             svec2 v1 = coordinates_.v1;
             svec2 v2 = coordinates_.v2;
 
-            float wall_len = std::sqrt(std::pow(v2.x - v1.x, 2) + std::pow(v2.y - v1.y, 2)) * TEX_MULTIPLIER;
+            float wall_len = std::sqrt(std::pow(v2.x - v1.x, 2) + std::pow(v2.y - v1.y, 2));
 
             if (this_sector == nullptr || other_sector == nullptr) {
                 // One-sided: render middle as solid wall if texture assigned
                 if (!wall_tests.middle_wall) return;
+            	auto this_tex = &middle_texture[0];
+                glBindTexture(GL_TEXTURE_2D, this_tex->texture_id);
 
-                glBindTexture(GL_TEXTURE_2D, middle_texture[0]);
-                GLint tex_w, tex_h;
-                glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex_w);
-                glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex_h);
-
-                float wall_height = (this_sector->ceil_height - this_sector->floor_height) * TEX_MULTIPLIER;
+                float wall_height = (this_sector->ceil_height - this_sector->floor_height);
 
                 // Basic texture coord calculation (add pegging logic here if needed)
-                float u_left = static_cast<float>(offsets[0]) / tex_w;
-                float u_right = u_left + wall_len / tex_w;
-                float v_bottom = static_cast<float>(offsets[1]) / tex_h;  // v_bottom at top of wall
-                float v_top = v_bottom + wall_height / tex_h;  // v_top at bottom of wall
+                float u_left = static_cast<float>(offsets[0]) / this_tex->w;
+                float u_right = u_left + wall_len / this_tex->w;
+                float v_bottom = static_cast<float>(offsets[1]) / this_tex->h;  // v_bottom at top of wall
+                float v_top = v_bottom + wall_height / this_tex->h;  // v_top at bottom of wall
 
                 glBegin(GL_QUADS);
                 glTexCoord2f(u_left, v_bottom);    glVertex3s(v1.x, this_sector->ceil_height, -v1.y);
@@ -348,7 +342,7 @@ namespace NewModels{
                 if (wall_tests.lower_wall[0] || wall_tests.lower_wall[1]) {
                 	svec2 v1,v2;
                 	Sector* this_sector, *other_sector;
-                	GLuint lower_texture;
+                	gl_texture* lower_texture;
                 	bool isTexture;
                 	int16_t xoffset, yoffset;
                 	if (this->this_sector->floor_height < this->other_sector->floor_height) {
@@ -356,7 +350,7 @@ namespace NewModels{
                 		other_sector = this->other_sector;
                 		v1 = this->coordinates_.v1;
                 		v2 = this->coordinates_.v2;
-                		lower_texture =this->lower_texture[0];
+                		lower_texture = &this->lower_texture[0];
                 		xoffset = this->offsets[0];
                 		yoffset = this->offsets[1];
                 		isTexture = wall_tests.lower_wall[0];
@@ -366,17 +360,14 @@ namespace NewModels{
                 		other_sector = this->this_sector;
                 		v1 = this->coordinates_.v2;
                 		v2 = this->coordinates_.v1;
-                		lower_texture = this->lower_texture[1];
+                		lower_texture = &this->lower_texture[1];
                 		xoffset = this->offsets[2];
                 		yoffset = this->offsets[3];
                 		isTexture = wall_tests.lower_wall[1];
                 	}
-                    glBindTexture(GL_TEXTURE_2D, lower_texture);
-                    GLint tex_w, tex_h;
-                    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex_w);
-                    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex_h);
+                    glBindTexture(GL_TEXTURE_2D, lower_texture->texture_id);
 
-                    float wall_height = (this_sector->floor_height - other_sector->floor_height) * TEX_MULTIPLIER;
+                    float wall_height = (this_sector->floor_height - other_sector->floor_height);
 
                     // Pegging for lower: if LowerUnpegged, align from top; else from bottom (adjust yoffset accordingly)
                     int16_t effective_yoffset = yoffset;
@@ -388,10 +379,10 @@ namespace NewModels{
                         // No adjustment needed beyond base offset
                     }
 
-                    float u_left = static_cast<float>(xoffset) / tex_w;
-                    float u_right = u_left + wall_len / tex_w;
-                    float v_bottom = static_cast<float>(effective_yoffset) / tex_h;  // at top of part
-                    float v_top = v_bottom + wall_height / tex_h;
+                	float u_left = static_cast<float>(offsets[0]) / lower_texture->w;
+                	float u_right = u_left + wall_len / lower_texture->w;
+                	float v_bottom = static_cast<float>(offsets[1]) / lower_texture->h;  // v_bottom at top of wall
+                	float v_top = v_bottom + wall_height / lower_texture->h;  // v_top at bottom of wall
 
                     glBegin(GL_QUADS);
                     glTexCoord2f(u_left, v_bottom);    glVertex3s(v1.x, this_sector->floor_height, -v1.y);
@@ -406,14 +397,14 @@ namespace NewModels{
 
                 	svec2 v1,v2;
                 	Sector* this_sector, *other_sector;
-                	GLuint upper_texture;
+                	gl_texture* upper_texture;
                 	int16_t xoffset, yoffset;
                 	if (this->this_sector->ceil_height > this->other_sector->ceil_height) {
                 		this_sector = this->this_sector;
                 		other_sector = this->other_sector;
                 		v1 = this->coordinates_.v1;
                 		v2 = this->coordinates_.v2;
-                		upper_texture =this->upper_texture[0];
+                		upper_texture = &this->upper_texture[0];
                 		xoffset = this->offsets[0];
                 		yoffset = this->offsets[1];
                 	}
@@ -422,17 +413,14 @@ namespace NewModels{
                 		other_sector = this->this_sector;
                 		v1 = this->coordinates_.v2;
                 		v2 = this->coordinates_.v1;
-                		upper_texture = this->upper_texture[1];
+                		upper_texture = &this->upper_texture[1];
                 		xoffset = this->offsets[2];
                 		yoffset = this->offsets[3];
                 	}
 
-                    glBindTexture(GL_TEXTURE_2D, upper_texture);
-                    GLint tex_w, tex_h;
-                    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex_w);
-                    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex_h);
+                    glBindTexture(GL_TEXTURE_2D, upper_texture->texture_id);
 
-                    float wall_height = (other_sector->ceil_height - this_sector->ceil_height) * TEX_MULTIPLIER;
+                    float wall_height = (other_sector->ceil_height - this_sector->ceil_height);
 
                     // Pegging for upper: if UpperUnpegged, align from bottom; else from top (default)
                     int16_t effective_yoffset = yoffset;
@@ -444,10 +432,10 @@ namespace NewModels{
                         effective_yoffset += (other_sector->ceil_height - this_sector->ceil_height);
                     }
 
-                    float u_left = static_cast<float>(xoffset) / tex_w;
-                    float u_right = u_left + wall_len / tex_w;
-                    float v_bottom = static_cast<float>(effective_yoffset) / tex_h;  // at top of part
-                    float v_top = v_bottom + wall_height / tex_h;
+                	float u_left = static_cast<float>(offsets[0]) / upper_texture->w;
+                	float u_right = u_left + wall_len / upper_texture->w;
+                	float v_bottom = static_cast<float>(offsets[1]) / upper_texture->h;  // v_bottom at top of wall
+                	float v_top = v_bottom + wall_height / upper_texture->h;  // v_top at bottom of wall
 
                     glBegin(GL_QUADS);
                     glTexCoord2f(u_left, v_bottom);    glVertex3s(v1.x, other_sector->ceil_height, -v1.y);
@@ -468,37 +456,34 @@ namespace NewModels{
 		                if (!wall_tests.middle_wall[side]) continue;
 
 		                svec2 v1, v2;
-		                GLuint texture;
+		                gl_texture* texture;
 		                int16_t xoffset, yoffset;
 
 		                if (side == 0) {
 			                // First side
 			                v1 = coordinates_.v1;
 			                v2 = coordinates_.v2;
-			                texture = middle_texture[0];
+			                texture = &middle_texture[0];
 			                xoffset = offsets[0];
 			                yoffset = offsets[1];
 		                } else {
 			                // Second side (reversed vertices)
 			                v1 = coordinates_.v2;
 			                v2 = coordinates_.v1;
-			                texture = middle_texture[1];
+			                texture = &middle_texture[1];
 			                xoffset = offsets[2];
 			                yoffset = offsets[3];
 		                }
 
-		                glBindTexture(GL_TEXTURE_2D, texture);
-		                GLint tex_w, tex_h;
-		                glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &tex_w);
-		                glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &tex_h);
+		                glBindTexture(GL_TEXTURE_2D, texture->texture_id);
 
-		                float wall_height = (z_high - z_low) * TEX_MULTIPLIER;
+		                float wall_height = (z_high - z_low);
 
 		                // Middle typically no pegging flags, but can add if needed
-		                float u_left = static_cast<float>(xoffset) / tex_w;
-		                float u_right = u_left + wall_len / tex_w;
-		                float v_bottom = static_cast<float>(yoffset) / tex_h;
-		                float v_top = v_bottom + wall_height / tex_h;
+		                float u_left = static_cast<float>(xoffset) / texture->w;
+		                float u_right = u_left + wall_len / texture->w;
+		                float v_bottom = static_cast<float>(yoffset) / texture->h;
+		                float v_top = v_bottom + wall_height / texture->h;
 
 		                glBegin(GL_QUADS);
 		                glTexCoord2f(u_left, v_bottom);

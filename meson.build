@@ -21,8 +21,11 @@ bgfx = cmake.subproject('bgfx.cmake')
 bgfx_dep = bgfx.dependency('bgfx')
 
 doom = executable('doom',
-                  ['src/headers/vec2.h','src/parser.cpp','src/Entity.cpp','src/AnimatedEntity.cpp', 'src/headers/stb_image.h', 'src/Game.cpp', 'src/Camera.cpp', 'src/Player.cpp', 'src/CircuitFinder.cpp',
-                   'src/TexBinder.cpp', 'main.cpp'],
+                  ['src/headers/vec2.h','src/parser.cpp','src/OriginalTextureRenderer.cpp',
+                   'src/Entity.cpp','src/AnimatedEntity.cpp', 'src/headers/stb_image.h',
+                   'src/Game.cpp', 'src/Camera.cpp', 'src/Player.cpp',
+                   'src/CircuitFinder.cpp', 'src/TexBinder.cpp', 'main.cpp',
+                   'src/RawLumpKeeper.cpp', 'src/textures/playpal.cpp'],
                   dependencies : [bgfx_dep, sdl2, sdl2_main, gl, regex, cdt_lib, glew],
                   link_args : ['-mwindows'],
                   install : true)

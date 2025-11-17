@@ -3,10 +3,10 @@
 //
 #include "headers/Entity.h"
 
-Entity::Entity(svec2 position, svec2 size, GLuint texId, EntityPosType pos_type) {
+Entity::Entity(svec2 position, uint16_t width, gl_texture tex, EntityPosType pos_type) {
 	this->position = position;
-	this->size = size;
-	this->texId = texId;
+	this->width = width;
+	this->tex = tex;
 	this->pos_type = pos_type;
 	start_height = 0;
 }
@@ -22,7 +22,8 @@ void Entity::Render(const fvec2 playerPosition) const
 	fvec2 toEntity = static_cast<fvec2>(position) - playerPosition; // vector from player to entity
 	fvec2 right = toEntity.perpendicular().normalized();          // right vector in world XZ
 
-	float halfWidth = size.x;
+
+	float halfWidth = tex.w;
 	fvec2 offset = right * halfWidth;
 
 	// Four corners in world space (X, Z)
@@ -32,13 +33,13 @@ void Entity::Render(const fvec2 playerPosition) const
 	fvec2 topRight    = bottomRight;
 
 	float bottomY = start_height;
-	float topY    = start_height + size.y;
+	float topY    = start_height + tex.h;
 
 	// Depth is the same for all four vertices (important for correct Z buffer!)
 	float depth = toEntity.length(); // or just toEntity.x/toEntity.y depending on convention
 	// If your camera looks along -Z and +Z is forward, you might want -toEntity.length() etc.
 	// Adjust sign so farther = larger Z or smaller Z depending on your GL projection
-	glBindTexture(GL_TEXTURE_2D, texId);
+	glBindTexture(GL_TEXTURE_2D, tex.texture_id);
 	glBegin(GL_TRIANGLES);
 		// First triangle: bottom-left, bottom-right, top-right
 		glTexCoord2f(0, 1); glVertex3f(bottomLeft.x,  bottomY, -bottomLeft.y);   // note: UV (0,1) for bottom
@@ -60,10 +61,10 @@ void Entity::SetLimits(svec2 limits) {
 			start_height = limits.x;
 			break;
 		case EntityPosType::Ceiling:
-			start_height = limits.y-size.y;
+			start_height = limits.y-tex.h;
 			break;
 		case EntityPosType::Floating:
-			start_height = rand()%(limits.y-size.y-limits.x+1)+limits.x;
+			start_height = rand()%(limits.y-tex.h-limits.x+1)+limits.x;
 			break;
 	}
 }

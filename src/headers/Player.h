@@ -23,6 +23,7 @@ private:
    Camera* camera;
    original_map * map;
    NewModels::Sector * current_sector;
+   bool ray_launched;
 };
 
 #endif

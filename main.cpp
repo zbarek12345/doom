@@ -35,7 +35,7 @@
 
 int main(int argc, char* argv[]) {
 
-    Game game = Game("./wad/0.wad");
+    Game game = Game("./wad/Doom.wad");
     game.Init();
     game.SelectMap(0);
     game.Run();

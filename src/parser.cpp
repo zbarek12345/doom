@@ -16,6 +16,7 @@
 #include <climits>
 
 #include "headers/AnimatedEntity.h"
+#include "headers/playpal.h"
 #include "headers/vec2.h"
 
 
@@ -132,8 +133,23 @@ void Parser::load_file(char *file_name) {
 			content->maps.push_back(m);
 			i += 10; // Skip the next 10 lumps (they belong to this map)
 		}
+		else {
+			const original_classes::lump* current = &gd.lumps[i];
+			auto raw_lump_content = static_cast<uint8_t *>(malloc(sizeof(uint8_t) * current->lump_size));
+			fseek(file, current->lump_offset, SEEK_SET);
+			fread(raw_lump_content, sizeof(uint8_t), current->lump_size, file);
+			content->raw_lump_keeper.CreateRawLumps(current->lump_name, raw_lump_content, current->lump_size);
+
+			if (strncmp(current->lump_name, "PLAYPAL",8) ==0 ) {
+				playpal_t* palette = new playpal_t;
+				palette->load_palette(raw_lump_content);
+				content->original_texture_renderer.BindPlaypal(palette);
+			}
+		}
 	}
 
+	content->original_texture_renderer.BindRawLumpKeeper(&content->raw_lump_keeper);
+	content->original_texture_renderer.LoadTextureData();
 	///cleaning
 	regfree(&regex);
 	fflush(stdout);
@@ -150,7 +166,9 @@ NewModels::Map *Parser::generateMap(int id) {
 	printf("Linedef no. %llu\n Vertex no. %llu\n", mp->linedefs.size(), mp->vertexes.size());
 
 
-	auto map = new NewModels::Map(); {
+	auto map = new NewModels::Map();
+	map->texture_binder->BindOriginalTextureRenderer(&content->original_texture_renderer);
+	{
 		///Find initial position of the player
 		for (auto &thing: mp->things) {
 			if (thing.type == 1) {
@@ -348,7 +366,7 @@ NewModels::Map *Parser::generateMap(int id) {
 					break;
 				case 2014:
 					entity = new GlassOfWaterEntity(svec2(thing.x,thing.y),
-						std::vector<GLuint>({tb->GetTexture("BON1A0", TextureType::ItemTexture),
+						std::vector<gl_texture>({tb->GetTexture("BON1A0", TextureType::ItemTexture),
 												tb->GetTexture("BON1B0", TextureType::ItemTexture),
 												tb->GetTexture("BON1C0", TextureType::ItemTexture),
 												tb->GetTexture("BON1D0", TextureType::ItemTexture),
@@ -361,7 +379,7 @@ NewModels::Map *Parser::generateMap(int id) {
 					break;
 				case 2035:
 					entity = new BarrelEntity(svec2(thing.x,thing.y),
-							std::vector<GLuint>({tb->GetTexture("BAR1A0", TextureType::ObstacleTexture), tb->GetTexture("BAR1B0", TextureType::ObstacleTexture)}));
+							std::vector<gl_texture>({tb->GetTexture("BAR1A0", TextureType::ObstacleTexture), tb->GetTexture("BAR1B0", TextureType::ObstacleTexture)}));
 
 			}
 			if (entity) {
@@ -605,7 +623,6 @@ cleanup:
 	fclose(file);
 	throw std::runtime_error("Error parsing file");
 }
-
 
 std::vector<std::string> Parser::get_levels() const {
 	auto res = std::vector<std::string>();

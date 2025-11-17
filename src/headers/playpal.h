@@ -7,17 +7,17 @@
 #define PLAYPAL_SIZE 3*256
 
 ///Aach color is rgb. Pallete has a const size of (3 B * 256);
-class playpal {
+class playpal_t {
 protected:
-	static uint8_t* palette;
+	uint8_t* palette;
 public:
-	static void load_palette(uint8_t* palette);
+	void load_palette(uint8_t* palette);
 
-	static void destroy_palette();
+	void destroy_palette();
 
-	static color3 get_color(uint8_t index);
+	color3 get_color(uint8_t index);
 
-	static bool is_loaded();
+	bool is_loaded();
 };
 
 

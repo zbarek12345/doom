@@ -84,6 +84,10 @@ namespace original_classes {
 	};
 };
 
+struct raw_lump {
+	uint8_t* data;
+	uint32_t size;
+};
 
 
 #endif //ORIGINAL_CLASSES_H

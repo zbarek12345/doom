@@ -1,3 +1,5 @@
+#include <GL/glew.h>
+#include <GL/gl.h>
 #include "headers/Player.h"
 #include <cmath>
 #include <iostream>
@@ -11,6 +13,7 @@ Player::Player(svec3 position, float angle, NewModels::Map* map) {
 
 	this->new_map = map;
 	this->current_sector = map->getPlayerSector({position.x,position.y},nullptr);
+	this->ray_launched = false;
 }
 
 void Player::HandleEvent() {
@@ -29,6 +32,7 @@ void Player::HandleEvent() {
 	if (keys[SDL_SCANCODE_D]) move_strafe += 1;
 	if (keys[SDL_SCANCODE_SPACE]) move_vertical += 1;
 	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= 1;
+	if (keys[SDL_SCANCODE_E] || keys[SDL_SCANCODE_KP_ENTER]) ray_launched = true;
 
 	movement_vector = forward * move_forward + right * move_strafe;
 }
@@ -44,6 +48,9 @@ void Player::Update(double deltaTime) {
 	new_map->HandleMovement(movement_vector, pos, current_sector);
 	pos.y = current_sector->floor_height + 46;
 	movement_vector = fvec3::zero;
+
+	if (ray_launched)
+		return;
 }
 
 void Player::Render() {

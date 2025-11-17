@@ -117,5 +117,6 @@ using dvec2 = vec2<double>;
 using ivec2 = vec2<int32_t>;
 using uvec2 = vec2<uint32_t>;
 using svec2 = vec2<int16_t>;
+using usvec2 = vec2<uint16_t>;
 
 #endif // DOOM_VEC2_H

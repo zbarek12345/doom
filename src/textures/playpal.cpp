@@ -2,23 +2,21 @@
 // Created by Wiktor on 28.10.2025.
 //
 
-#include "playpal.h"
+#include "../headers/playpal.h"
 
-uint8_t* playpal::palette = nullptr;
-
-void playpal::destroy_palette() {
+void playpal_t::destroy_palette() {
 	delete [] palette;
 }
 
-void playpal::load_palette(uint8_t *palette) {
-	palette = playpal::palette;
+void playpal_t::load_palette(uint8_t *palette) {
+	this->palette = palette;
 }
 
-color3 playpal::get_color(uint8_t index) {
+color3 playpal_t::get_color(uint8_t index) {
 	return {palette[index*3], palette[index*3+1], palette[index*3+2]};
 }
 
-bool playpal::is_loaded() {
+bool playpal_t::is_loaded() {
 	return palette != nullptr;
 }
 
