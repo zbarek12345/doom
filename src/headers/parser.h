@@ -38,6 +38,8 @@ public:
 
   void obj_export(int id, const char *filepath);
 
+  void read_all_lumps(const char *filepath);
+
   void ply_export(int id, const char *filepath);
 
   std::vector<std::string> get_levels() const;

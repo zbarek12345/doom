@@ -577,6 +577,36 @@ void Parser::obj_export(int id, const char *filepath) {
 	fclose(f);
 }
 
+void Parser::read_all_lumps(const char *filepath) {
+	FILE *file = fopen(filepath, "rb");
+
+	game_data gd = {{}, nullptr};
+
+	fread(&gd.header, sizeof(original_classes::header), 1, file);
+
+
+	gd.lumps = (original_classes::lump *) malloc(gd.header.lump_count * sizeof(original_classes::lump));
+
+	fseek(file, gd.header.lump_offset, SEEK_SET);
+
+	fread(gd.lumps, sizeof(original_classes::lump), gd.header.lump_count, file);
+
+	for (int i = 0; i < gd.header.lump_count; i++) {
+		original_classes::lump *current = gd.lumps+i;
+		printf("%.8s %d\n", current->lump_name, current->lump_size);
+	}
+	free(gd.lumps);
+
+	///cleaning
+	fflush(stdout);
+	fclose(file);
+	return;
+cleanup:
+	fclose(file);
+	throw std::runtime_error("Error parsing file");
+}
+
+
 std::vector<std::string> Parser::get_levels() const {
 	auto res = std::vector<std::string>();
 	for (const auto &map: content->maps) {

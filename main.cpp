@@ -35,12 +35,12 @@
 
 int main(int argc, char* argv[]) {
 
-    Game game = Game("Doom1.WAD");
+    Game game = Game("./wad/0.wad");
     game.Init();
     game.SelectMap(0);
     game.Run();
 
-    // Parser* p = new Parser();
-    // p->load_file("./wad/DOOM.WAD");
-    // p->testExport(0, "par_e1m2_triangles.obj");
+    Parser* p = new Parser();
+    //p->load_file("./wad/DOOM.WAD");
+    //p->read_all_lumps("./wad/0.WAD");
 }

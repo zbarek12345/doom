@@ -732,7 +732,7 @@ namespace NewModels{
 					fvec3 p_pos = fvec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
 					player_pos_save = player_pos;
 					fvec3 perpendicular = fvec3{-move.z, 0, move.x};
-					perpendicular = perpendicular.normalized()*2;
+					perpendicular = perpendicular.normalized()*16.;
 
 					fvec3 p_pos_2 = p_pos + perpendicular;
 					fvec3 p_pos_3 = p_pos - perpendicular;
@@ -755,11 +755,11 @@ namespace NewModels{
 					float dist_2 = (player_pos - p_pos_2).length();
 					float dist_3 = (player_pos - p_pos_3).length();
 
-					if (dist_1 <= dist_2 && dist_1 <= dist_3) {
+					if (dist_1 > dist_2 && dist_1 > dist_3) {
 						player_pos = p_pos;
 						move = mv1;
 					}
-					else if (dist_2 < dist_3) {
+					else if (dist_2 > dist_3) {
 						player_pos = p_pos_2;
 						move = mv2;
 					}

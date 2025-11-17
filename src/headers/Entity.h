@@ -23,6 +23,8 @@ protected:
 	EntityPosType pos_type;
 
 public:
+	virtual ~Entity() = default;
+
 	Entity(svec2 position, svec2 size, GLuint texId, EntityPosType pos_type = EntityPosType::Floor);
 
 	virtual void Update(double deltaTime);
