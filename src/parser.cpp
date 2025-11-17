@@ -214,7 +214,7 @@ NewModels::Map *Parser::generateMap(int id) {
 			sector->id = i;
 			sector->floor_height = sector_def->floor_height;
 			sector->ceil_height = sector_def->ceiling_height;
-			sector->bindTextures(tb->GetTexture(sector_def->floor_texture), tb->GetTexture(sector_def->ceiling_texture));{
+			sector->bindTextures(tb->GetTexture(sector_def->floor_texture, TextureType::FlatTexture), tb->GetTexture(sector_def->ceiling_texture, TextureType::FlatTexture));{
 				std::vector<svec2> temp;
 				int16_t ceil = mp->sectors[i].ceiling_height, floor = mp->sectors[i].floor_height;
 
@@ -314,15 +314,15 @@ NewModels::Map *Parser::generateMap(int id) {
 			if (right_sector != nullptr) {
 				auto sd = &mp->sidedefs[line.sidedef[0]];
 				if (sd->upper_texture[0] != '-') {
-					auto tex = tb->GetTexture(sd->upper_texture);
+					auto tex = tb->GetTexture(sd->upper_texture, TextureType::WallTexture);
 					wall->assignUpperTexture(0, tex);
 				}
 				if (sd->lower_texture[0] != '-') {
-					auto tex = tb->GetTexture(sd->lower_texture);
+					auto tex = tb->GetTexture(sd->lower_texture, TextureType::WallTexture);
 					wall->assignLowerTexture(0, tex);
 				}
 				if (sd->middle_texture[0] != '-') {
-					auto tex = tb->GetTexture(sd->middle_texture);
+					auto tex = tb->GetTexture(sd->middle_texture, TextureType::WallTexture);
 					wall->assignMiddleTexture(0, tex);
 				}
 				if (line.special_type != 0) {
@@ -337,15 +337,15 @@ NewModels::Map *Parser::generateMap(int id) {
 				auto sd = &mp->sidedefs[line.sidedef[1]];
 				wall->setCoordinates(v2, v1);
 				if (sd->upper_texture[0] != '-') {
-					auto tex = tb->GetTexture(sd->upper_texture);
+					auto tex = tb->GetTexture(sd->upper_texture,  TextureType::WallTexture);
 					wall->assignUpperTexture(1, tex);
 				}
 				if (sd->lower_texture[0] != '-') {
-					auto tex = tb->GetTexture(sd->lower_texture);
+					auto tex = tb->GetTexture(sd->lower_texture,  TextureType::WallTexture);
 					wall->assignLowerTexture(1, tex);
 				}
 				if (sd->middle_texture[0] != '-') {
-					auto tex = tb->GetTexture(sd->middle_texture);
+					auto tex = tb->GetTexture(sd->middle_texture,  TextureType::WallTexture);
 					wall->assignMiddleTexture(1, tex);
 				}
 				left_sector->bindWall(wall);

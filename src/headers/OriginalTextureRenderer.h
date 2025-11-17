@@ -25,7 +25,7 @@ struct pnames_t {
 
 struct mappatch_t {
 	uint16_t origin_x, origin_y;
-	uint16_t width, height;
+	uint16_t patch;
 	///ignored
 	uint16_t step_dir;
 	///ignored

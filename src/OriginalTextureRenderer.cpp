@@ -43,6 +43,7 @@ void OriginalTextureRenderer::LoadTextureData() {
 
 		uint8_t* tex_data = tex1_lump->data + offsets[i];
 		maptexture_t& mt = maptextures[i];
+		memset(mt.name, 0, sizeof(char)*8);
 		memcpy(mt.name, tex_data, 8);
 		mt.masked = *reinterpret_cast<uint32_t*>(tex_data + 8);
 		mt.width = *reinterpret_cast<uint16_t*>(tex_data + 12);
@@ -54,7 +55,7 @@ void OriginalTextureRenderer::LoadTextureData() {
 	}
 
 	delete [] offsets;
-
+	uint16_t last_texture_index = num_textures - 1;
 	tex1_lump = raw_lump_keeper->GetRawLump("TEXTURE2");
 	if (!tex1_lump || tex1_lump->size < 4) {
 		return;
@@ -68,7 +69,7 @@ void OriginalTextureRenderer::LoadTextureData() {
 
 		maptextures.push_back({});
 		uint8_t* tex_data = tex1_lump->data + offsets[i];
-		maptexture_t& mt = maptextures[i];
+		maptexture_t& mt = maptextures[i + last_texture_index];
 		memcpy(mt.name, tex_data, 8);
 		mt.masked = *reinterpret_cast<uint32_t*>(tex_data + 8);
 		mt.width = *reinterpret_cast<uint16_t*>(tex_data + 12);
@@ -186,7 +187,7 @@ raw_texture OriginalTextureRenderer::RenderTexture(const char *texName, Original
     			// Note: Assuming fixed struct: width/height should be 'patch' index; this is a bug in provided struct.
     			// Treating mp.width as 'patch' index for correctness (adjust if needed)
     			char p_name[9];
-    			memcpy(p_name, patchNames[mp.width].name, 8);  // Use mp.width as patch index
+    			memcpy(p_name, patchNames[mp.patch].name, 8);  // Use mp.width as patch index
     			p_name[8] = '\0';
     			raw_texture patch_tex = RenderTexture(p_name, OriginalTextureType::Patch);
     			if (patch_tex.data == nullptr) continue;
@@ -228,8 +229,8 @@ usvec2 OriginalTextureRenderer::getTextureSize(const char *texName, const Origin
 		case OriginalTextureType::Sprite: {
 			const raw_lump *lump = raw_lump_keeper->GetRawLump(texName);
 			if (!lump || lump->size < 4) return {0, 0};
-			const int16_t w = *reinterpret_cast<int16_t*>(lump->data);
-			const int16_t h = *reinterpret_cast<int16_t*>(lump->data + 2);
+			unsigned short w = *reinterpret_cast<uint16_t *>(lump->data);
+			unsigned short h = *reinterpret_cast<uint16_t *>(lump->data + 2);
 			return {w, h};
 		}
 		case OriginalTextureType::Texture: {

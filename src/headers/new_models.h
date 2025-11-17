@@ -106,7 +106,7 @@ namespace NewModels{
 		};
 
 		void BindTextureCoords(svec2 coords, gl_texture* texture) {
-			fvec2 diff = {float(coords.x/texture->w), float(coords.y/texture->h)};
+			fvec2 diff = {(float)coords.x/(float)texture->w, (float)coords.y/(float)texture->h};
 			if (id==45 && !have_print)
 				printf(" Tex Coords : (%f %f)\n", diff.x, -diff.y);
 			glTexCoord2f(diff.x, -diff.y);
@@ -233,6 +233,7 @@ namespace NewModels{
 			wall_tests.lower_wall[0] = false;
 			wall_tests.lower_wall[1] = false;
 			wall_tests.special_active = false;
+			memset(offsets, 0, sizeof(uint16_t)*4);
 			special_type = 0;
 		}
 
