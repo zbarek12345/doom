@@ -17,12 +17,14 @@ private:
 	const double swap_interval = 2e-1;
 
 public:
-	AnimatedEntity(svec2 pos, uint16_t width, std::vector<gl_texture> textures, EntityPosType type = EntityPosType::Floor);
+	AnimatedEntity(svec2 pos, uint16_t width, std::string base_tex_name, std::string tex_sequence, bool blocking, EntityPosType type = EntityPosType::Floor);
+
+	void bindTextures(std::vector<gl_texture>& textures) override;
 
 	void Update(double deltaTime) override;
 };
 
-#define BarrelEntity(pos, textures) AnimatedEntity(pos, 16, textures, EntityPosType::Floor)
-#define GlassOfWaterEntity(pos, textures) AnimatedEntity(pos, 16, textures, EntityPosType::Floor)
+#define BarrelEntity(pos) AnimatedEntity(pos, 16, "BAR1", "AB", true, EntityPosType::Floor)
+
 
 #endif //DOOM_ANIMATEDENTITY_H

@@ -6,15 +6,33 @@
 #include "Camera.h"
 #include "map.h"
 #include "new_models.h"
+enum class Weapon {
+   Fist,
+   Pistol,
+   Shotgun,
+   Minigun,
+   Chainsaw,
+   SShotgun,
+   Launcher,
+   Plasma,
+   BFG
+};
 
 class Player {
 public:
+
    Player(svec3 position, float angle, NewModels::Map* map);
    void Update(double deltaTime);
    void HandleEvent(SDL_Event* event, double deltaTime);
    void HandleEvent();
    void Render();
 
+   static bool has_backpack;
+   static int16_t health; static int16_t armor;
+   ///[0] - Bull, [1] - Shell, [3] - Miss, [4] - Cell
+   static uint16_t ammo[4];
+   static uint16_t max_ammo[4];
+   static bool has_weapon[9];
 private:
    fvec3 movement_vector{};
    NewModels::Map* new_map;

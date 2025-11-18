@@ -6,6 +6,13 @@
 
 #define M_PI 3.14159265358979323846
 
+bool Player::has_backpack = false;
+int16_t Player::armor = 0;
+int16_t Player::health = 100;
+uint16_t Player::ammo[] = {0, 0, 0, 0};
+uint16_t Player::max_ammo[] = {200, 100, 100, 600};
+bool Player::has_weapon[] = {1,1,0,0,0,0,0,0,0};
+
 Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	this->position = position;
 	pos = fvec3(position).xzy();

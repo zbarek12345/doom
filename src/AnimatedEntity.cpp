@@ -4,9 +4,14 @@
 
 #include "headers/AnimatedEntity.h"
 
-AnimatedEntity::AnimatedEntity(const svec2 pos, uint16_t width, std::vector<gl_texture> textures, EntityPosType type):Entity(pos, width, textures[0], type){
-	this->textures = textures;
+AnimatedEntity::AnimatedEntity(const svec2 pos, uint16_t width, std::string base_tex_name, std::string tex_sequence, bool blocking, EntityPosType type):
+	Entity(pos, width, base_tex_name, tex_sequence, blocking, type){
 	current_ = 0;
+}
+
+void AnimatedEntity::bindTextures(std::vector<gl_texture> &textures) {
+	this->textures = textures;
+	tex = textures[current_];
 }
 
 void AnimatedEntity::Update(const double deltaTime) {

@@ -98,6 +98,7 @@ namespace NewModels{
 		std::vector<uint16_t> edges_map;
 		std::set<Sector*> neighbors;
 		std::vector<Wall*> walls={};
+		std::set<Entity*> entities;
 		bool have_print= false;
 
 		enum type {
@@ -346,6 +347,7 @@ namespace NewModels{
                 	gl_texture* lower_texture;
                 	bool isTexture;
                 	int16_t xoffset, yoffset;
+                	bool reverse = false;
                 	if (this->this_sector->floor_height < this->other_sector->floor_height) {
                 		this_sector = this->this_sector;
                 		other_sector = this->other_sector;
@@ -357,6 +359,7 @@ namespace NewModels{
                 		isTexture = wall_tests.lower_wall[0];
                 	}
                 	else {
+                		reverse = true;
                 		this_sector = this->other_sector;
                 		other_sector = this->this_sector;
                 		v1 = this->coordinates_.v2;
@@ -384,7 +387,9 @@ namespace NewModels{
                 	float u_right = u_left + wall_len / lower_texture->w;
                 	float v_bottom = static_cast<float>(offsets[1]) / lower_texture->h;  // v_bottom at top of wall
                 	float v_top = v_bottom + wall_height / lower_texture->h;  // v_top at bottom of wall
-
+					if (reverse) {
+						std::swap(u_left, u_right);
+					}
                     glBegin(GL_QUADS);
                     glTexCoord2f(u_left, v_bottom);    glVertex3s(v1.x, this_sector->floor_height, -v1.y);
                     glTexCoord2f(u_right, v_bottom);   glVertex3s(v2.x, this_sector->floor_height, -v2.y);
@@ -424,19 +429,17 @@ namespace NewModels{
                     float wall_height = (other_sector->ceil_height - this_sector->ceil_height);
 
                     // Pegging for upper: if UpperUnpegged, align from bottom; else from top (default)
-                    int16_t effective_yoffset = yoffset;
-                    if (flags_.UpperUnpegged) {
-                        // Peg to bottom: offset from lower ceil up
-                        // No adjustment (starts from bottom)
-                    } else {
-                        // Peg to top (default): offset from higher ceil down
-                        effective_yoffset += (other_sector->ceil_height - this_sector->ceil_height);
-                    }
-
                 	float u_left = static_cast<float>(offsets[0]) / upper_texture->w;
                 	float u_right = u_left + wall_len / upper_texture->w;
                 	float v_bottom = static_cast<float>(offsets[1]) / upper_texture->h;  // v_bottom at top of wall
                 	float v_top = v_bottom + wall_height / upper_texture->h;  // v_top at bottom of wall
+
+					if (this->flags_.UpperUnpegged) {
+						auto v_target = ceil(v_top);
+						v_bottom += v_target - v_top;
+						v_top = v_target;
+					}
+
 
                     glBegin(GL_QUADS);
                     glTexCoord2f(u_left, v_bottom);    glVertex3s(v1.x, other_sector->ceil_height, -v1.y);
@@ -487,14 +490,14 @@ namespace NewModels{
 		                float v_top = v_bottom + wall_height / texture->h;
 
 		                glBegin(GL_QUADS);
-		                glTexCoord2f(u_left, v_bottom);
-		                glVertex3s(v1.x, z_high, -v1.y);
-		                glTexCoord2f(u_right, v_bottom);
-		                glVertex3s(v2.x, z_high, -v2.y);
-		                glTexCoord2f(u_right, v_top);
-		                glVertex3s(v2.x, z_low, -v2.y);
-		                glTexCoord2f(u_left, v_top);
-		                glVertex3s(v1.x, z_low, -v1.y);
+			                glTexCoord2f(u_left, v_bottom);
+			                glVertex3s(v1.x, z_high, -v1.y);
+			                glTexCoord2f(u_right, v_bottom);
+			                glVertex3s(v2.x, z_high, -v2.y);
+			                glTexCoord2f(u_right, v_top);
+			                glVertex3s(v2.x, z_low, -v2.y);
+			                glTexCoord2f(u_left, v_top);
+			                glVertex3s(v1.x, z_low, -v1.y);
 		                glEnd();
 	                }
                 }
@@ -718,7 +721,7 @@ namespace NewModels{
 					fvec3 p_pos = fvec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
 					player_pos_save = player_pos;
 					fvec3 perpendicular = fvec3{-move.z, 0, move.x};
-					perpendicular = perpendicular.normalized()*16.;
+					perpendicular = perpendicular.normalized()*1.;
 
 					fvec3 p_pos_2 = p_pos + perpendicular;
 					fvec3 p_pos_3 = p_pos - perpendicular;
@@ -741,11 +744,11 @@ namespace NewModels{
 					float dist_2 = (player_pos - p_pos_2).length();
 					float dist_3 = (player_pos - p_pos_3).length();
 
-					if (dist_1 > dist_2 && dist_1 > dist_3) {
+					if (dist_1 < dist_2 && dist_1 < dist_3) {
 						player_pos = p_pos;
 						move = mv1;
 					}
-					else if (dist_2 > dist_3) {
+					else if (dist_2 < dist_3) {
 						player_pos = p_pos_2;
 						move = mv2;
 					}

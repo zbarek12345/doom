@@ -16,6 +16,7 @@
 #include <climits>
 
 #include "headers/AnimatedEntity.h"
+#include "headers/Collectibles.h"
 #include "headers/playpal.h"
 #include "headers/vec2.h"
 
@@ -360,32 +361,44 @@ NewModels::Map *Parser::generateMap(int id) {
 
 		for (auto &thing : mp->things) {
 			Entity* entity = nullptr;
+			svec2 pos = {thing.x, thing.y};
 			switch (thing.type) {
-				case 48:
-					entity = new SpaceShipEntity(svec2(thing.x,thing.y), tb->GetTexture("ELECA0", TextureType::ObstacleTexture));
+				case 0xA:
+					entity = new BloodyMessEntity(pos);
 					break;
-				case 2014:
-					entity = new GlassOfWaterEntity(svec2(thing.x,thing.y),
-						std::vector<gl_texture>({tb->GetTexture("BON1A0", TextureType::ItemTexture),
-												tb->GetTexture("BON1B0", TextureType::ItemTexture),
-												tb->GetTexture("BON1C0", TextureType::ItemTexture),
-												tb->GetTexture("BON1D0", TextureType::ItemTexture),
-												tb->GetTexture("BON1C0", TextureType::ItemTexture),
-												tb->GetTexture("BON1B0", TextureType::ItemTexture)
-						}));
+				case 0x30:
+					entity = new SpaceShipEntity(pos);
+					break;
+				case 0x7DF:
+					entity = new ArmorBonusCollectible(pos);
+					break;
+				case 0x7E2:
+					entity = new ArmorCollectible(pos);
 					break;
 				case 2028:
-					entity = new LampEntity(svec2(thing.x,thing.y), tb->GetTexture("COLUA0", TextureType::ObstacleTexture));
+					entity = new LampEntity(pos);
 					break;
 				case 2035:
-					entity = new BarrelEntity(svec2(thing.x,thing.y),
-							std::vector<gl_texture>({tb->GetTexture("BAR1A0", TextureType::ObstacleTexture), tb->GetTexture("BAR1B0", TextureType::ObstacleTexture)}));
+					entity = new BarrelEntity(pos);
 
 			}
 			if (entity) {
 				NewModels::Sector* sec = map->getPlayerSector(svec2(thing.x,thing.y), nullptr);
+
+				{
+					auto tex_seq = std::vector<gl_texture>();
+					auto seq = entity->getTexSequence();
+					auto base = entity->getBaseName();
+					for (auto &let: seq) {
+						tex_seq.push_back(tb->GetTexture((base+let+"0").c_str(), TextureType::ItemTexture));
+					}
+					entity->bindTextures(tex_seq);
+				}
+
 				entity->SetLimits(svec2(sec->floor_height, sec->ceil_height));
+
 				map->entities.push_back(entity);
+				sec->entities.emplace(entity);
 			}
 		}
 	}

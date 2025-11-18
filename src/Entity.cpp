@@ -3,10 +3,12 @@
 //
 #include "headers/Entity.h"
 
-Entity::Entity(svec2 position, uint16_t width, gl_texture tex, EntityPosType pos_type) {
+Entity::Entity(svec2 position, uint16_t size, std::string base_tex_name , std::string tex_sequence, bool blocks,  EntityPosType pos_type) {
 	this->position = position;
-	this->width = width;
-	this->tex = tex;
+	this->width = size;
+	this->blocks = blocks;
+	this->tex_sequence = tex_sequence;
+	this->base_texture_name = base_tex_name;
 	this->pos_type = pos_type;
 	start_height = 0;
 }
@@ -17,13 +19,18 @@ void Entity::Update(double deltaTime) {
 	}
 }
 
+void Entity::bindTextures(std::vector<gl_texture> &textures) {
+	assert(textures.size() == 1);
+	tex = textures[0];
+}
+
 void Entity::Render(const fvec2 playerPosition) const
 {
 	fvec2 toEntity = static_cast<fvec2>(position) - playerPosition; // vector from player to entity
 	fvec2 right = toEntity.perpendicular().normalized();          // right vector in world XZ
 
 
-	float halfWidth = tex.w;
+	float halfWidth = tex.w/2.f;
 	fvec2 offset = right * halfWidth;
 
 	// Four corners in world space (X, Z)
@@ -67,4 +74,27 @@ void Entity::SetLimits(svec2 limits) {
 			start_height = rand()%(limits.y-tex.h-limits.x+1)+limits.x;
 			break;
 	}
+}
+
+bool Entity::AllowCollection() const {
+	return false;
+}
+
+bool Entity::Blocks() const {
+	return this->blocks;
+}
+
+void Entity::Collect() const {}
+
+std::string Entity::getBaseName() {
+	return base_texture_name;
+}
+
+std::string Entity::getTexSequence() {
+	return tex_sequence;
+}
+
+void Entity::getPosAndRad(svec2 &pos, uint16_t &width) const {
+	pos = position;
+	width = this->width;
 }
