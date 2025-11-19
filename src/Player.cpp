@@ -56,8 +56,11 @@ void Player::Update(double deltaTime) {
 	pos.y = current_sector->floor_height + 46;
 	movement_vector = fvec3::zero;
 
-	if (ray_launched)
-		return;
+	if (ray_launched) {
+		auto cam_vec = camera->get3DVector();
+		new_map->TryActivateRay(cam_vec, pos);
+	}
+
 }
 
 void Player::Render() {

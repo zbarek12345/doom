@@ -15,12 +15,10 @@ const std::string HudRender::hud_textures_path = "./textures/";
 void HudRender::InvertColor(uint8_t *pixels, const int width, const int height) {
 	auto *p = reinterpret_cast<color4 *>(pixels);
 	for (int i = 0; i < width * height; i++) {
-		auto pixel = p[i];
-		if (p->a != 0) {
-			p->r = 255 - p->r;
-			p->g = 255 - p->g;
-			p->b = 255 - p->b;
-		}
+		if (p[i].a == 0) continue;
+		p[i].r = 255;
+		p[i].g = 255;
+		p[i].b = 255;
 	}
 }
 
@@ -211,10 +209,10 @@ void HudRender::RenderArmor() {
     // Draw icon
     glBindTexture(GL_TEXTURE_2D, icons.armor_icon.texture_id);
     glBegin(GL_QUADS);
-    glTexCoord2f(0, 0); glVertex2f(x_pos, y_pos);
-    glTexCoord2f(1, 0); glVertex2f(x_pos + s, y_pos);
-    glTexCoord2f(1, 1); glVertex2f(x_pos + s, y_pos + s);
-    glTexCoord2f(0, 1); glVertex2f(x_pos, y_pos + s);
+    glTexCoord2f(0, 1); glVertex2f(x_pos, y_pos);
+    glTexCoord2f(1, 1); glVertex2f(x_pos + s, y_pos);
+    glTexCoord2f(1, 0); glVertex2f(x_pos + s, y_pos + s);
+    glTexCoord2f(0, 0); glVertex2f(x_pos, y_pos + s);
     glEnd();
 
     // Draw numbers
