@@ -783,7 +783,8 @@ namespace NewModels{
 			void TryActivateRay(fvec3& lookVector, Sector* currentSector, fvec3& start_pos) {
 				bool target_hit;
 				svec3 start_pos_s = (svec3)start_pos;
-				RayCaster::PerformRayCast( lookVector, currentSector, start_pos_s, RayCaster::Interaction, target_hit);
+				//todo anty
+				// RayCaster::PerformRayCast( lookVector, currentSector, start_pos_s, RayCaster::Interaction, target_hit);
 			}
 
     		~Map() {

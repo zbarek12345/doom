@@ -7,7 +7,7 @@
 #include <random>
 
 #include "Projectile.h"
-#include "glsl-optimizer/src/mesa/main/compiler.h"
+// #include "glsl-optimizer/src/mesa/main/compiler.h"
 
 enum class WeaponType {
     FIST,
@@ -125,7 +125,7 @@ public:
                     float angleV = distVertical(rng) * (static_cast<float>(M_PI) / 180.0f);
 
                     // Apply rotation to direction (assuming z-forward, x-right, y-up)
-                    Vector3 spreadDir;
+                    fvec3 spreadDir;
                     // Rotate horizontal (around y-axis)
                     spreadDir.x = direction.x * std::cos(angleH) + direction.z * std::sin(angleH);
                     spreadDir.z = -direction.x * std::sin(angleH) + direction.z * std::cos(angleH);
@@ -135,7 +135,7 @@ public:
                     spreadDir.z = spreadDir.y * std::sin(angleV) + spreadDir.z * std::cos(angleV);
                     spreadDir.y = tempY;
 
-                    new Projectile(ProjectileType::PELLET, position, spreadDir.Normalized());
+                    new Projectile(ProjectileType::PELLET, position, spreadDir.normalized());
                 }
                 break;
             case WeaponType::CHAINGUN:

@@ -19,12 +19,7 @@ enum class ProjectileType {
 };
 
 class Projectile {
-	uint16_t speed = 0;
-	uint16_t min_damage=0;
-	uint16_t max_damage=0;
-
-	fvec3 direction;
-	fvec3 position;
+public:
 	Projectile(ProjectileType type, const fvec3& position, const fvec3& direction) {
 		// In a real engine, this would initialize velocity, collision, etc.
 		// For demo, just print
@@ -32,6 +27,14 @@ class Projectile {
 				  << " at (" << position.x << ", " << position.y << ", " << position.z << ")"
 				  << " direction (" << direction.x << ", " << direction.y << ", " << direction.z << ")\n";
 	}
+
+private:
+	uint16_t speed = 0;
+	uint16_t min_damage=0;
+	uint16_t max_damage=0;
+
+	fvec3 direction;
+	fvec3 position;
 
 	void ApplyDamage();
 
