@@ -65,6 +65,7 @@ struct vec2 {
     void normalize() noexcept { *this = normalized(); }
 
     constexpr T dot(const vec2& o) const noexcept { return x*o.x + y*o.y; }
+    constexpr T cross(const vec2& o) const noexcept { return {x*o.y - y*o.x}; }  //iloczyn wektorowy 2D (zwraca skalar)
     constexpr vec2 perpendicular() const noexcept { return {-y, x}; }      // 90° clockwise
     constexpr vec2 perpendicular_ccw() const noexcept { return {y, -x}; } // 90° counter-clockwise
 

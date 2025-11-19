@@ -119,7 +119,7 @@ void Game::Run() {
     }
 
     while (running) {
-        printf("start\n");
+        // printf("start\n");
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
                 running = false;

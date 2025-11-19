@@ -271,6 +271,10 @@ namespace NewModels{
 
 		void* getSpecial(special_activator_type type);
 
+		coordinates getCoordinates() {
+			return coordinates_;
+		}
+
 		fvec3 getPlanePoint() {
 			return fvec3(coordinates_.v1.x, coordinates_.v1.y,this_sector->floor_height).xzy();
 		}
@@ -535,6 +539,9 @@ namespace NewModels{
 		}
 	};
 
+	inline void * Wall::getSpecial(special_activator_type type) {
+	}
+
 	class RayCaster{
 	public:
 		enum RayType {
@@ -576,82 +583,107 @@ namespace NewModels{
 			return dist;
 		}
 
-		static fvec3 PerformRayCast(fvec3& vector, Sector*& currentSector, svec3 startingPoint, RayType rayType, bool& target_hit) {
+		//zwraca true jesli odcinek [start, start+move] przecina odcinek [a,b]
+		//jesli outPoint != nullptr, wpisze punkt przeciecia
+		static bool SegmentMoveIntersect(const fvec2& start, const fvec2& move, const fvec2& a, const fvec2& b, fvec2* outPoint = nullptr)
+		{
+			const float eps = 1e-6f;
+
+			fvec2 p = start;
+			fvec2 r = move;      //wektor odcinka: koniec = p + r
+			fvec2 q = a;
+			fvec2 s = b - a;     //wektor odcinka ab
+
+			float rxs = r.cross(s);
+			if (std::fabs(rxs) < eps) {
+				//linie rownolegle lub wspolliniowe -> tu ignorujemy
+				return false;
+			}
+
+			fvec2 qp = q - p;
+
+			float t = qp.cross(s) / rxs; //parametr na [start,start+move]
+			float u = qp.cross(r) / rxs; //parametr na [a,b]
+
+			//t w [0,1] -> na pierwszym odcinku
+			//u w [0,1] -> na drugim odcinku
+			if (t >= 0.0f && t <= 1.0f &&
+				u >= 0.0f && u <= 1.0f)
+			{
+				if (outPoint) {
+					*outPoint = p + r * t;
+				}
+				return true;
+			}
+
+			return false;
+		}
+
+		static fvec3 PerformRayCast(fvec3& vector, Sector*& currentSector, fvec3 startingPoint, RayType rayType, bool& target_hit) {
 			fvec3 normalizedVector = vector.normalized();
 			float vectorLength = vector.length();
 
-			Wall* intersectionWall;
-			float intersectionDist = SHRT_MAX;
-			for (auto wall : currentSector->GetWalls()) {
-				auto planeDist = PlaneIntersectionDistance(wall, vector, startingPoint, 500.);
-				if (planeDist < intersectionDist) {
-					intersectionDist = planeDist;
-					intersectionWall = wall;
-				}
-			}
+			if (rayType == Walk || rayType == WalkSide) {
+				fvec3 endPoint = startingPoint + vector;
 
-			if (true) { //rayType == Walk || rayType ==WalkSide) {
-				//printf("[inf] Intersection Dist: %f\n", intersectionDist);
-				fvec3 res = {};
-				fvec3 sp = fvec3(startingPoint);
-				fvec3 vec = fvec3(vector);
-				auto thresholdDistance = rayType == WalkSide ? 1. : 17.;
-				if (intersectionDist < SHRT_MAX) {
-					//printf("%d, %f\n", currentSector->id, intersectionDist);
-				}
+				// Check all walls in a given sector.
+				for (auto wall : currentSector->GetWalls()) {
+					auto coordinateWall = wall->getCoordinates();
 
-				// res = vec + sp;
-				// vector = fvec3(0,0,0);
+					fvec2 wall1 = {static_cast<float>(coordinateWall.v1.x), static_cast<float>(coordinateWall.v1.y)};
+					fvec2 wall2 = {static_cast<float>(coordinateWall.v2.x), static_cast<float>(coordinateWall.v2.y)};
 
-				if (intersectionDist > vectorLength + thresholdDistance) {
-					// printf("1\n");
-					res = vec + sp;
-					vector = fvec3(0,0,0);
-				}
-				else {
-					if (intersectionWall->AllowWalkThrough(currentSector)) {
-						// printf("2\n");
-						res = sp + normalizedVector*(intersectionDist+1);
-						vector = vector - normalizedVector*(intersectionDist+1);
-						currentSector = intersectionWall->getOther(currentSector);
-					}
-					else {
-						// printf("3\n");
-						res = sp + normalizedVector*(intersectionDist-thresholdDistance);
-						vector = fvec3(0,0,0);
+					float r = 16;
+					// resize wall
+					fvec2 dir = wall2-wall1;
+					dir.normalize();
+					wall1 = wall1 - dir * r;
+					wall2 = wall2 + dir * r;
+					//resize move
+					dir = fvec2{vector.x, vector.z};
+					dir += dir.normalized() * r;
+
+
+					// check if we have a collision with the line
+					if (SegmentMoveIntersect(fvec2{startingPoint.x, startingPoint.z}, dir, wall1, wall2)) {
+						//check if it is possible to go through the wall
+						if (!wall->AllowWalkThrough(currentSector)) {
+							vector = fvec3(0, 0, 0);
+							return {startingPoint.x, startingPoint.y,startingPoint.z};
+						}
 					}
 				}
-
-				return {res.x, res.y,res.z};
+				vector = fvec3(0, 0, 0);
+				return endPoint;
 			}
 
-			else {
-				//Calculate whether ray will cross the ceil or floor before any plane.
-				auto floorCeilIntersection = std::max(
-					CalculateVectorCeilDist(normalizedVector,currentSector, startingPoint),
-					CalculateVectorFloorDist(normalizedVector, currentSector, startingPoint)
-					);
-
-				if (intersectionDist > vectorLength && floorCeilIntersection > vectorLength) {
-					auto restVector = fvec3(0,0,0);
-					vector = restVector;
-					target_hit = false;
-					return (fvec3)startingPoint + fvec3(round(vector.x), round(vector.y), round(vector.z));
-				}
-
-				if (floorCeilIntersection < intersectionDist) {
-					auto distVector = normalizedVector * floorCeilIntersection;
-					target_hit = true;
-					vector =  distVector;
-					return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
-				}
-
-				auto distVector = normalizedVector * intersectionDist;
-				auto restVector = normalizedVector * (vectorLength - intersectionDist);
-				target_hit = false;
-				vector = restVector;
-				return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
-			}
+			// else {
+			// 	//Calculate whether ray will cross the ceil or floor before any plane.
+			// 	auto floorCeilIntersection = std::max(
+			// 		CalculateVectorCeilDist(normalizedVector,currentSector, startingPoint),
+			// 		CalculateVectorFloorDist(normalizedVector, currentSector, startingPoint)
+			// 		);
+			//
+			// 	if (intersectionDist > vectorLength && floorCeilIntersection > vectorLength) {
+			// 		auto restVector = fvec3(0,0,0);
+			// 		vector = restVector;
+			// 		target_hit = false;
+			// 		return (fvec3)startingPoint + fvec3(round(vector.x), round(vector.y), round(vector.z));
+			// 	}
+			//
+			// 	if (floorCeilIntersection < intersectionDist) {
+			// 		auto distVector = normalizedVector * floorCeilIntersection;
+			// 		target_hit = true;
+			// 		vector =  distVector;
+			// 		return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
+			// 	}
+			//
+			// 	auto distVector = normalizedVector * intersectionDist;
+			// 	auto restVector = normalizedVector * (vectorLength - intersectionDist);
+			// 	target_hit = false;
+			// 	vector = restVector;
+			// 	return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
+			// }
 
 
 			return {0,0,0};
@@ -720,55 +752,22 @@ namespace NewModels{
 				bool target_hit;
 				fvec3 player_pos_save;
 
-				std::cout << move << std::endl;
+				// std::cout << move << std::endl;
+				// std::cout << move.length() << std::endl;
+
 				while (!move.is_zero()) {
 					//todo glicz przy wchodzeniu do ściany
 
-
-					fvec3 p_pos = fvec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
+					fvec3 p_pos = fvec3(player_pos.x, player_pos.y, player_pos.z);
 					player_pos_save = player_pos;
-					fvec3 perpendicular = fvec3{-move.z, 0, move.x};
-					perpendicular = perpendicular.normalized()*16.;
 
-					fvec3 p_pos_2 = p_pos + perpendicular;
-					fvec3 p_pos_3 = p_pos - perpendicular;
-					fvec3 mv1 = move, mv2 = move, mv3=move;
-					auto pos2Sector = getPlayerSector({static_cast<short>(p_pos_2.x),static_cast<short>(p_pos_2.z)}, currentSector);
-					auto pos3Sector = getPlayerSector({static_cast<short>(p_pos_3.x),static_cast<short>(p_pos_3.z)}, currentSector);
+					fvec3 mv1 = move;
+					p_pos = RayCaster::PerformRayCast(mv1, currentSector, p_pos, RayCaster::Walk, target_hit);
 
-					p_pos = RayCaster::PerformRayCast(mv1, currentSector, (svec3)p_pos, RayCaster::Walk, target_hit);
+					//test2
+					player_pos = p_pos;
+					move = mv1;
 
-					if (!pos2Sector || !pos3Sector) {
-						player_pos = player_pos_save;
-						break;
-					}
-					p_pos_2 = RayCaster::PerformRayCast(mv2, pos2Sector, (svec3)p_pos_2, RayCaster::WalkSide, target_hit);
-					p_pos_2 = p_pos_2 - perpendicular;
-
-					p_pos_3 = RayCaster::PerformRayCast(mv3, pos3Sector, (svec3)p_pos_3, RayCaster::WalkSide, target_hit);
-					p_pos_3 =p_pos_3 + perpendicular;
-
-					float dist_1 = (player_pos - p_pos).length();
-					float dist_2 = (player_pos - p_pos_2).length();
-					float dist_3 = (player_pos - p_pos_3).length();
-
-
-					if (dist_1 <= 0) {
-						printf("te");
-					}
-
-					if (dist_3 < dist_1 && dist_3 < dist_2 && dist_3 != -1) {
-						player_pos = p_pos_3;
-						move = mv3;
-					}
-					else if (dist_2 < dist_3 && dist_2 != -1) {
-						player_pos = p_pos_2;
-						move = mv2;
-					}
-					else {
-						player_pos = p_pos;
-						move = mv1;
-					}
 					svec3 p_pos_s = (svec3)player_pos;
 					auto next_sector = getPlayerSector({p_pos_s.x, p_pos_s.z}, currentSector);
 					if (next_sector == nullptr)
