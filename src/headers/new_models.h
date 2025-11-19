@@ -10,6 +10,7 @@
 #include <CDTUtils.h>
 #include <climits>
 #include <cstring>
+#include <iostream>
 #include <set>
 #include "Entity.h"
 #include "TexBinder.h"
@@ -598,26 +599,30 @@ namespace NewModels{
 				if (intersectionDist < SHRT_MAX) {
 					//printf("%d, %f\n", currentSector->id, intersectionDist);
 				}
+
+				// res = vec + sp;
+				// vector = fvec3(0,0,0);
+
 				if (intersectionDist > vectorLength + thresholdDistance) {
-					printf("1\n");
+					// printf("1\n");
 					res = vec + sp;
 					vector = fvec3(0,0,0);
 				}
 				else {
 					if (intersectionWall->AllowWalkThrough(currentSector)) {
-						printf("2\n");
+						// printf("2\n");
 						res = sp + normalizedVector*(intersectionDist+1);
-						vector = vector - normalizedVector*(intersectionDist-1);
+						vector = vector - normalizedVector*(intersectionDist+1);
 						currentSector = intersectionWall->getOther(currentSector);
 					}
 					else {
-						printf("3\n");
+						// printf("3\n");
 						res = sp + normalizedVector*(intersectionDist-thresholdDistance);
 						vector = fvec3(0,0,0);
 					}
 				}
 
-				return fvec3(res.x, res.y,res.z);
+				return {res.x, res.y,res.z};
 			}
 
 			else {
@@ -714,14 +719,16 @@ namespace NewModels{
 			void HandleMovement(fvec3& move, fvec3& player_pos, Sector*& currentSector) {
 				bool target_hit;
 				fvec3 player_pos_save;
+
+				std::cout << move << std::endl;
 				while (!move.is_zero()) {
 					//todo glicz przy wchodzeniu do ściany
-					// printf("stop\n");
+
 
 					fvec3 p_pos = fvec3(round(player_pos.x), round(player_pos.y), round(player_pos.z));
 					player_pos_save = player_pos;
 					fvec3 perpendicular = fvec3{-move.z, 0, move.x};
-					perpendicular = perpendicular.normalized()*1.;
+					perpendicular = perpendicular.normalized()*16.;
 
 					fvec3 p_pos_2 = p_pos + perpendicular;
 					fvec3 p_pos_3 = p_pos - perpendicular;
@@ -730,31 +737,37 @@ namespace NewModels{
 					auto pos3Sector = getPlayerSector({static_cast<short>(p_pos_3.x),static_cast<short>(p_pos_3.z)}, currentSector);
 
 					p_pos = RayCaster::PerformRayCast(mv1, currentSector, (svec3)p_pos, RayCaster::Walk, target_hit);
-					if (pos2Sector) {
-						p_pos_2 = RayCaster::PerformRayCast(mv2, pos2Sector, (svec3)p_pos_2, RayCaster::WalkSide, target_hit);
-					}
-					if (pos3Sector) {
-						p_pos_3 = RayCaster::PerformRayCast(mv3, pos3Sector, (svec3)p_pos_3, RayCaster::WalkSide, target_hit);
-					}
 
-					p_pos_2 =p_pos_2 - perpendicular;
+					if (!pos2Sector || !pos3Sector) {
+						player_pos = player_pos_save;
+						break;
+					}
+					p_pos_2 = RayCaster::PerformRayCast(mv2, pos2Sector, (svec3)p_pos_2, RayCaster::WalkSide, target_hit);
+					p_pos_2 = p_pos_2 - perpendicular;
+
+					p_pos_3 = RayCaster::PerformRayCast(mv3, pos3Sector, (svec3)p_pos_3, RayCaster::WalkSide, target_hit);
 					p_pos_3 =p_pos_3 + perpendicular;
 
 					float dist_1 = (player_pos - p_pos).length();
 					float dist_2 = (player_pos - p_pos_2).length();
 					float dist_3 = (player_pos - p_pos_3).length();
 
-					if (dist_1 < dist_2 && dist_1 < dist_3) {
-						player_pos = p_pos;
-						move = mv1;
+
+					if (dist_1 <= 0) {
+						printf("te");
 					}
-					else if (dist_2 < dist_3) {
+
+					if (dist_3 < dist_1 && dist_3 < dist_2 && dist_3 != -1) {
+						player_pos = p_pos_3;
+						move = mv3;
+					}
+					else if (dist_2 < dist_3 && dist_2 != -1) {
 						player_pos = p_pos_2;
 						move = mv2;
 					}
 					else {
-						player_pos = p_pos_3;
-						move = mv3;
+						player_pos = p_pos;
+						move = mv1;
 					}
 					svec3 p_pos_s = (svec3)player_pos;
 					auto next_sector = getPlayerSector({p_pos_s.x, p_pos_s.z}, currentSector);

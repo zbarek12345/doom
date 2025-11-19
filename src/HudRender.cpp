@@ -82,13 +82,15 @@ void HudRender::DestroyHudTextures(){
 }
 
 void HudRender::Render() {
-    Game::GetScreenSize(w, h);
+	Game::GetScreenSize(w, h);
 
 	glDisable(GL_DEPTH_TEST);
+
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
 	glOrtho(0, (GLfloat)w, 0, (GLfloat)h, -1.f, 1.f);
+
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
@@ -101,10 +103,12 @@ void HudRender::Render() {
 	RenderAmmo();
 
 	glDisable(GL_BLEND);
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
+
+	glPopMatrix();                 // modelview
 	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
+	glPopMatrix();                 // projection
+
+	glMatrixMode(GL_MODELVIEW);    // <- bardzo wazne
 	glEnable(GL_DEPTH_TEST);
 }
 
