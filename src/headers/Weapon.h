@@ -5,9 +5,8 @@
 #ifndef DOOM_WEAPON_H
 #define DOOM_WEAPON_H
 #include <random>
-
+#define M_PI 3.14159265358979323846
 #include "Projectile.h"
-// #include "glsl-optimizer/src/mesa/main/compiler.h"
 
 enum class WeaponType {
     FIST,
