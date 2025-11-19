@@ -15,7 +15,7 @@ struct Numbers {
 struct Icons {
 	gl_texture plus_icon;
 	gl_texture armor_icon;
-	gl_texture ammo_icon;
+	gl_texture ammo_icons[4];
 };
 
 class HudRender {

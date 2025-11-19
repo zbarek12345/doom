@@ -11,6 +11,9 @@
 class Game {
 public:
 	Game(char* file_path);
+
+	Game(char *file_path, char **patch_files);
+
 	~Game();
 	int Init();
 	void SelectMap(int id);

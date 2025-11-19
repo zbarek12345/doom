@@ -6,9 +6,15 @@
 #include "Camera.h"
 #include "map.h"
 #include "new_models.h"
+#include "Weapon.h"
 
 class Player {
 public:
+   static uint8_t current_weapon;
+
+   static bool next_weapon_selected;
+
+   static double next_weapon_selected_timer;
 
    Player(svec3 position, float angle, NewModels::Map* map);
    void Update(double deltaTime);
@@ -16,9 +22,21 @@ public:
    void HandleEvent();
    void Render();
 
+   static void SelectPreviousWeapon();
+
+   static void SelectNextWeapon();
+
+   static gl_texture GetCurrentWeaponTexture();
+
+   static WeaponType GetCurrentWeaponType();
+
+   static bool TryPickWeapon(uint8_t weapon_index);
+
+   static uint8_t GetCurrentAmmoType();
+
    static bool has_backpack;
    static int16_t health; static int16_t armor;
-   ///[0] - Bull, [1] - Shell, [3] - Miss, [4] - Cell
+   ///[0] - Bull, [1] - Shell, [2] - Miss, [3] - Cell
    static uint16_t ammo[4];
    static uint16_t max_ammo[4];
    static bool has_weapon[9];

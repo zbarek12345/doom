@@ -13,6 +13,8 @@ Game::Game(char* file_path) {
     gl_context = nullptr;
 }
 
+Game::Game(char* file_path, char** patch_files){}
+
 Game::~Game() {
     delete player;
     delete parser;
@@ -89,8 +91,8 @@ void Game::Run() {
     double fps_time = 1.0f / fps;
     double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();
-    //todo
-    // SDL_SetRelativeMouseMode(SDL_TRUE);
+    ///TODO -- xxx
+    SDL_SetRelativeMouseMode(SDL_TRUE);
     bool size_changed = true;  // Force initial projection setup
 
     while (running) {
@@ -99,7 +101,7 @@ void Game::Run() {
             if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
                 running = false;
             }
-            if (event.type == SDL_MOUSEMOTION && player) {
+            if (player && (event.type == SDL_MOUSEMOTION  || event.type == SDL_MOUSEWHEEL)) {
                 player->HandleEvent(&event, deltaTime);
             }
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {

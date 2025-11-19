@@ -15,6 +15,9 @@ const std::string HudRender::hud_textures_path = "./textures/";
 void HudRender::InvertColor(uint8_t *pixels, const int width, const int height) {
 	auto *p = reinterpret_cast<color4 *>(pixels);
 	for (int i = 0; i < width * height; i++) {
+		if (p[i].r >150 && p[i].g >150 && p[i].b >150)
+			p[i].a = 0;
+
 		if (p[i].a == 0) continue;
 		p[i].r = 255;
 		p[i].g = 255;
@@ -25,10 +28,12 @@ void HudRender::InvertColor(uint8_t *pixels, const int width, const int height) 
 gl_texture HudRender::LoadTexture(const char *im_path, const bool invert_color) {
 	int width, height, channels;
 	auto texture = stbi_load(im_path, &width, &height, &channels, 0);
-	if (invert_color)
+	if (invert_color && texture)
 		InvertColor(texture, width, height);
-	GLuint texture_id;
+
 	if (texture) {
+		GLuint texture_id;
+
 		glGenTextures(1, &texture_id);
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 
@@ -52,7 +57,7 @@ void HudRender::LoadNumber(uint8_t i, gl_texture &number) {
 }
 
 void HudRender::LoadIcon(std::string name, gl_texture &icon) {
-	std::string texture_name = hud_textures_path + "/icons/" + name +".png";
+	std::string texture_name = hud_textures_path + "icons/" + name +".png";
 	icon = LoadTexture(texture_name.c_str(), true);
 }
 
@@ -60,7 +65,11 @@ void HudRender::LoadHudTextures() {
 	printf("Hud loading\n");
 	LoadIcon("plus", HudRender::icons.plus_icon);
 	LoadIcon("armor", HudRender::icons.armor_icon);
-	//LoadIcon("ammo", HudRender::icons.ammo_icon);
+
+	LoadIcon("bullet", HudRender::icons.ammo_icons[0]);
+	LoadIcon("shell", HudRender::icons.ammo_icons[1]);
+	LoadIcon("rocket2", HudRender::icons.ammo_icons[2]);
+	LoadIcon("cell", HudRender::icons.ammo_icons[3]);
 
 	for (auto i = 0; i < 10; i++) {
 		LoadNumber(i, HudRender::numbers.numbers[i]);
@@ -72,7 +81,10 @@ void HudRender::LoadHudTextures() {
 void HudRender::DestroyHudTextures(){
 	glDeleteTextures(1, &HudRender::icons.plus_icon.texture_id);
 	glDeleteTextures(1, &HudRender::icons.armor_icon.texture_id);
-	glDeleteTextures(1, &HudRender::icons.ammo_icon.texture_id);
+
+	for (auto& ammo_tex : HudRender::icons.ammo_icons) {
+		glDeleteTextures(1, &ammo_tex.texture_id);
+	}
 
 	for (auto & number : HudRender::numbers.numbers) {
 		glDeleteTextures(1, &number.texture_id);
@@ -232,4 +244,63 @@ void HudRender::RenderArmor() {
 }
 
 void HudRender::RenderAmmo() {
+	auto current_ammo = Player::GetCurrentAmmoType();
+	if (current_ammo == 4)
+		return;
+
+	auto player_ammo = Player::ammo[current_ammo];
+
+	float margin_x = HudRender::w * 0.05f;
+	float margin_y = HudRender::h * 0.05f;
+	float alloc_width = HudRender::w * 0.15f;
+	float s = std::min(static_cast<float>(HudRender::h) * 0.1f, alloc_width / 4.0f);
+	float total_width = 4.0f * s;
+
+	float x_pos = HudRender::w - margin_x - total_width;
+	float y_pos = margin_y;
+
+	uint8_t nums[3];
+	uint8_t i = 0;
+	uint16_t ammo_count = player_ammo;
+
+	while (ammo_count > 0) {
+		nums[2-i] = ammo_count % 10;
+		ammo_count /= 10;
+		i++;
+	}
+
+	if (i == 0) {
+		nums[2] = 0;
+		i = 1;
+	}
+
+	float num_start_x = x_pos + s + (3.0f * s - static_cast<float>(i) * s);
+
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Draw icon
+	glBindTexture(GL_TEXTURE_2D, icons.ammo_icons[current_ammo].texture_id);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 1); glVertex2f(x_pos, y_pos);
+	glTexCoord2f(1, 1); glVertex2f(x_pos + s, y_pos);
+	glTexCoord2f(1, 0); glVertex2f(x_pos + s, y_pos + s);
+	glTexCoord2f(0, 0); glVertex2f(x_pos, y_pos + s);
+	glEnd();
+
+	// Draw numbers
+	for (uint8_t j = 3 - i; j < 3; j++) {
+		glBindTexture(GL_TEXTURE_2D, numbers.numbers[nums[j]].texture_id);
+		glBegin(GL_QUADS);
+		glTexCoord2f(0, 1); glVertex2f(num_start_x, y_pos);
+		glTexCoord2f(1, 1); glVertex2f(num_start_x + s, y_pos);
+		glTexCoord2f(1, 0); glVertex2f(num_start_x + s, y_pos + s);
+		glTexCoord2f(0, 0); glVertex2f(num_start_x, y_pos + s);
+		glEnd();
+		num_start_x += s;
+	}
+
+	glDisable(GL_BLEND);
+	glDisable(GL_TEXTURE_2D);
 }

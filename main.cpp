@@ -35,9 +35,9 @@
 
 int main(int argc, char* argv[]) {
 
-    Game game = Game("./wad/Doom.wad");
+    Game game = Game("./wad/Doom.wad" );
     game.Init();
-    game.SelectMap(0);
+    game.SelectMap(1);
     game.Run();
 
     //Parser* p = new Parser();

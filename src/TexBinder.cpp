@@ -42,23 +42,30 @@ void TexBinder::LoadTexture(std::string path, TextureType type) {
 	auto texture = stbi_load(abs_path.c_str(), &width, &height, &channels, 0);
 
 	if (texture) {
-		assign:
-		GLuint texture_id;
-		glGenTextures(1, &texture_id);
-		glBindTexture(GL_TEXTURE_2D, texture_id);
+		try {
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		// set texture filtering parameters
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			GLuint texture_id;
+			glGenTextures(1, &texture_id);
+			glBindTexture(GL_TEXTURE_2D, texture_id);
 
-		auto format = channels == 4 ? GL_RGBA : GL_RGB;
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, texture);
-		auto size = original_texture_renderer->getTextureSize(path.c_str(), ttype);
-		textures[path] = {size.x, size.y, texture_id};
-		stbi_image_free(texture);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			// set texture filtering parameters
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+			auto format = channels == 4 ? GL_RGBA : GL_RGB;
+			glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, texture);
+			auto size = original_texture_renderer->getTextureSize(path.c_str(), ttype);
+			textures[path] = {size.x, size.y, texture_id};
+			stbi_image_free(texture);
+		}
+		catch (std::exception& e) {
+			printf("Failed to load texture %s, trying to load from WAD\n", abs_path.c_str());
+			goto assign;
+		}
 	} else {
+		assign:
 		printf("Texture failed to load at %s, proceeding to load from WAD\n", abs_path.c_str());
 		GLuint texture_id;
 		glGenTextures(1, &texture_id);
