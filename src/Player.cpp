@@ -58,7 +58,7 @@ void Player::Update(double deltaTime) {
 
 	if (ray_launched) {
 		auto cam_vec = camera->get3DVector();
-		new_map->TryActivateRay(cam_vec, pos);
+		new_map->TryActivateRay(cam_vec, current_sector, pos);
 	}
 
 }
