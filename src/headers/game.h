@@ -17,6 +17,10 @@ public:
 	~Game();
 	int Init();
 	void SelectMap(int id);
+
+	DoomGunInterface *LoadWeapon(DoomGunInitiator initiator);
+
+	void GenerateWeapons();
 	void Run();
 
 	static void GetScreenSize(uint16_t& width, uint16_t& height);
@@ -28,6 +32,7 @@ private:
 	Player* player;
 	SDL_Window* window;
 	SDL_GLContext gl_context;
+	std::vector<DoomGunInterface*> Weapons;
 };
 
 #endif

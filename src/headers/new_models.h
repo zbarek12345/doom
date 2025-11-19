@@ -552,7 +552,7 @@ namespace NewModels{
 			WalkSide,
 		};
 
-		static float PlaneIntersectionDistance(Wall* wall, fvec3 vector, svec3 startingPoint, float maxDist) {
+		static float PlaneIntersectionDistance(Wall* wall, fvec3 vector, fvec3 startingPoint, float maxDist) {
 			fvec3 planePoint = wall->getPlanePoint();
 			fvec3 normal = wall->getPlaneNormal();
 			float bottom = normal.dot(vector);
@@ -572,13 +572,13 @@ namespace NewModels{
 			return SHRT_MAX;
 		}
 
-		static float CalculateVectorCeilDist(fvec3 normalizedVector, Sector* sector, svec3 startingPoint) {
+		static float CalculateVectorCeilDist(fvec3 normalizedVector, Sector* sector, fvec3 startingPoint) {
 			float ceilHeight = floor(sector->ceil_height);
 			float dist = (ceilHeight - startingPoint.y)/normalizedVector.y;
 			return dist;
 		}
 
-		static float CalculateVectorFloorDist(fvec3 normalizedVector, Sector* sector, svec3 startingPoint) {
+		static float CalculateVectorFloorDist(fvec3 normalizedVector, Sector* sector, fvec3 startingPoint) {
 			float ceilHeight = floor(sector->floor_height);
 			float dist = (ceilHeight - startingPoint.y)/normalizedVector.y;
 			return dist;
@@ -658,33 +658,42 @@ namespace NewModels{
 				return endPoint;
 			}
 
-			// else {
-			// 	//Calculate whether ray will cross the ceil or floor before any plane.
-			// 	auto floorCeilIntersection = std::max(
-			// 		CalculateVectorCeilDist(normalizedVector,currentSector, startingPoint),
-			// 		CalculateVectorFloorDist(normalizedVector, currentSector, startingPoint)
-			// 		);
-			//
-			// 	if (intersectionDist > vectorLength && floorCeilIntersection > vectorLength) {
-			// 		auto restVector = fvec3(0,0,0);
-			// 		vector = restVector;
-			// 		target_hit = false;
-			// 		return (fvec3)startingPoint + fvec3(round(vector.x), round(vector.y), round(vector.z));
-			// 	}
-			//
-			// 	if (floorCeilIntersection < intersectionDist) {
-			// 		auto distVector = normalizedVector * floorCeilIntersection;
-			// 		target_hit = true;
-			// 		vector =  distVector;
-			// 		return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
-			// 	}
-			//
-			// 	auto distVector = normalizedVector * intersectionDist;
-			// 	auto restVector = normalizedVector * (vectorLength - intersectionDist);
-			// 	target_hit = false;
-			// 	vector = restVector;
-			// 	return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
-			// }
+			else {
+			    auto intersectionDist = SHRT_MAX;
+				Wall* intersectionWall = nullptr;
+				for (auto& wall : currentSector->GetWalls()) {
+					auto dist = PlaneIntersectionDistance(wall, normalizedVector, startingPoint, vectorLength);
+					if (dist < intersectionDist) {
+						intersectionDist = dist;
+						intersectionWall = wall;
+					}
+				}
+
+				auto floorCeilIntersection = std::max(
+					CalculateVectorCeilDist(normalizedVector,currentSector, startingPoint),
+					CalculateVectorFloorDist(normalizedVector, currentSector, startingPoint)
+					);
+
+				if (intersectionDist > vectorLength && floorCeilIntersection > vectorLength) {
+					auto restVector = fvec3(0,0,0);
+					vector = restVector;
+					target_hit = false;
+					return (fvec3)startingPoint + fvec3(round(vector.x), round(vector.y), round(vector.z));
+				}
+
+				if (floorCeilIntersection < intersectionDist) {
+					auto distVector = normalizedVector * floorCeilIntersection;
+					target_hit = true;
+					vector =  distVector;
+					return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
+				}
+
+				auto distVector = normalizedVector * intersectionDist;
+				auto restVector = normalizedVector * (vectorLength - intersectionDist);
+				target_hit = false;
+				vector = restVector;
+				return (fvec3)startingPoint + distVector;
+			}
 
 
 			return {0,0,0};
@@ -753,9 +762,6 @@ namespace NewModels{
 			void HandleMovement(fvec3& move, fvec3& player_pos, Sector*& currentSector) {
 				bool target_hit;
 				fvec3 player_pos_save;
-
-				// std::cout << move << std::endl;
-				// std::cout << move.length() << std::endl;
 
 				while (!move.is_zero()) {
 					//todo glicz przy wchodzeniu do ściany

@@ -35,6 +35,9 @@ void TexBinder::LoadTexture(std::string path, TextureType type) {
 	else if (type == TextureType::ItemTexture) {
 		abs_path = "./ITEMS/" + path + ".png";
 		ttype = OriginalTextureType::Sprite;
+	}else if (type == TextureType::WeaponTexture) {
+		abs_path = "./WEAPONS/" + path + ".png";
+		ttype = OriginalTextureType::Sprite;
 	}
 	
 	printf("Loading texture %s\n", abs_path.c_str());

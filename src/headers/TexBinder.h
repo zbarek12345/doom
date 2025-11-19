@@ -14,6 +14,7 @@ enum class TextureType {
    ObstacleTexture,
    ItemTexture,
    PlayerTexture,
+   WeaponTexture,
    MonsterTexture
 };
 

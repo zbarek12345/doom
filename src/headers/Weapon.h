@@ -7,6 +7,7 @@
 #include <random>
 #define M_PI 3.14159265358979323846
 #include "Projectile.h"
+#include "bgfx/bgfx.h"
 
 enum class WeaponType {
     FIST,
@@ -23,133 +24,169 @@ enum class WeaponType {
 enum class WeaponState {
 	READY,      // Weapon is idle and ready to fire
 	FIRING,     // In firing animation (projectile spawn happens here)
-	RELOADING,  // Post-fire cooldown/reload
-	LOWERING,   // Switching away
-	RAISING     // Switching to
+	REFIRING,  // Post-fire cooldown/reload
+    PICK_UP,
+};
+
+struct animationFrameLoader {
+    char let;
+    float time;
+};
+
+struct animationFrame {
+    gl_texture texture;
+    double time;
+};
+
+struct DoomGunInitiator {
+    std::string base_texture_name;
+    std::string flash_texture_name;
+    double pickupDelay = 10.;
+    std::vector<std::vector<animationFrameLoader>> loaders;
+    std::vector<animationFrameLoader> flashLoader;
+
+    DoomGunInitiator(std::string base_texture_name, std::string flash_texture_name, double pickupDelay, std::vector<std::vector<animationFrameLoader>> loaders, std::vector<animationFrameLoader> flashLoader) : base_texture_name(base_texture_name), flash_texture_name(flash_texture_name), pickupDelay(pickupDelay), loaders(loaders), flashLoader(flashLoader) {}
 };
 
 class DoomGunInterface {
 private:
-    WeaponType currentType;
-    WeaponState currentState;
-    int cooldownTicks;  // Simple timer for state transitions (e.g., fire rate)
-    std::mt19937 rng;   // For random shotgun spread
+    WeaponState currentState = WeaponState::READY;
+    double pickupDelay = .04;
+    double pickupTimer = 0.;
+    double lastShotTime = 0.;
 
-    // Helper to transition states
-    void SetState(WeaponState newState) {
-        currentState = newState;
-        // Reset timers or other logic as needed
-        switch (newState) {
-            case WeaponState::FIRING:
-                cooldownTicks = GetFireDelay(currentType);  // Example delays
-                break;
-            case WeaponState::READY:
-                cooldownTicks = 0;
-                break;
-            default:
-                break;
-        }
-    }
 
-    // Get fire delay in ticks (arbitrary values mimicking original fire rates)
-    int GetFireDelay(WeaponType type) const {
-        switch (type) {
-            case WeaponType::FIST: return 10;
-            case WeaponType::CHAINSAW: return 5;
-            case WeaponType::PISTOL: return 15;
-            case WeaponType::SHOTGUN: return 30;
-            case WeaponType::CHAINGUN: return 5;
-            case WeaponType::ROCKET_LAUNCHER: return 40;
-            case WeaponType::PLASMA_RIFLE: return 10;
-            case WeaponType::BFG9000: return 50;
-            default: return 20;
-        }
-    }
-
+    double flashTimer = 0.;
+    int16_t currentFlashFrame = -1;
+    std::vector<animationFrame> frames[(int)WeaponState::PICK_UP] = {};
+    std::vector<animationFrame> flash = {};
+    double frameTimer = 0.;
+    size_t currentFrame = 0;
 public:
-    DoomGunInterface(WeaponType initialType = WeaponType::PISTOL)
-        : currentType(initialType), currentState(WeaponState::READY),
-          cooldownTicks(0), rng(std::random_device{}()) {}
+    DoomGunInterface(){}
 
-    virtual ~DoomGunInterface() = default;
-
-    // Switch to a different weapon type
-    void SetWeaponType(WeaponType type) {
-        currentType = type;
-        SetState(WeaponState::RAISING);  // Simulate raise animation
-        // In full impl, transition to READY after raise
-        SetState(WeaponState::READY);
+    void SetDelay(double delay) {
+        pickupDelay = delay;
     }
 
-    // Update the weapon state each frame/tick
-    void Update() {
-        if (cooldownTicks > 0) {
-            --cooldownTicks;
-            if (cooldownTicks == 0) {
-                if (currentState == WeaponState::FIRING) {
-                    SetState(WeaponState::RELOADING);
-                } else if (currentState == WeaponState::RELOADING) {
-                    SetState(WeaponState::READY);
+    void SetAnimationFrames(std::vector<animationFrame> frames[]) {
+        for (int i =0;i<3;i++) {
+            this->frames[i] = frames[i];
+        }
+
+    }
+
+    void SetFlashFrames(std::vector<animationFrame> flash) {
+        this->flash = flash;
+    }
+
+    void Unselect() {
+        currentState = WeaponState::PICK_UP;
+    }
+
+    void Select() {
+        currentState = WeaponState::PICK_UP;
+        pickupTimer = 0.;
+    }
+
+    void Update(double deltaTime) {
+        printf("%lf\n", deltaTime);
+        if (currentState == WeaponState::FIRING || currentState == WeaponState::REFIRING) {
+            frameTimer += deltaTime;
+            if (frameTimer > frames[static_cast<int>(currentState)][currentFrame].time) {
+                currentFrame++;
+                frameTimer = 0.;
+                if (currentFrame > frames[static_cast<int>(currentState)].size()-1) {
+                    currentState = WeaponState::READY;
+                    currentFrame = 0;
+                    lastShotTime = 0.;
                 }
+            }
+
+            flashTimer += deltaTime;
+            if (currentFlashFrame != -1 && flashTimer > flash[currentFlashFrame].time) {
+                currentFlashFrame++;
+                flashTimer = 0.;
+                if (currentFlashFrame >= flash.size()) currentFlashFrame = -1;
+            }
+
+        }
+
+        if (currentState == WeaponState::PICK_UP) {
+            pickupTimer += deltaTime;
+            if (pickupTimer>pickupDelay) {
+                printf("Weapon picked up\n");
+                currentState = WeaponState::READY;
+            }
+        }
+
+        if (currentState == WeaponState::READY) {
+            lastShotTime += deltaTime;
+            if (frameTimer > frames[static_cast<int>(currentState)][currentFrame].time) {
+                currentFrame = (currentFrame + 1 )% frames[static_cast<int>(currentState)].size();
             }
         }
     }
 
-    // Fire the weapon, spawning projectile(s) of the specified type
-    // Assert: All weapons spawn projectiles (melee as short-range proj)
-    void Fire(const fvec3& position, const fvec3& target) {
-        if (currentState != WeaponState::READY) return;  // Can't fire yet
-
-        fvec3 direction = (target - position).normalized();
-        SetState(WeaponState::FIRING);
-
-        // Spawn based on type
-        switch (currentType) {
-            case WeaponType::FIST:
-                new Projectile(ProjectileType::PUNCH, position, direction);
-                break;
-            case WeaponType::CHAINSAW:
-                new Projectile(ProjectileType::SAW, position, direction);
-                break;
-            case WeaponType::PISTOL:
-                new Projectile(ProjectileType::BULLET, position, direction);
-                break;
-            case WeaponType::SHOTGUN:
-                // Spawn 7 pellets with random spread (mimicking original spread)
-                for (int i = 0; i < 7; ++i) {
-                    // Horizontal spread ~0-10 degrees, vertical ~0-5 degrees (approx)
-                    std::uniform_real_distribution<float> distHorizontal(-10.0f, 10.0f);
-                    std::uniform_real_distribution<float> distVertical(-5.0f, 5.0f);
-                    float angleH = distHorizontal(rng) * (static_cast<float>(M_PI) / 180.0f);
-                    float angleV = distVertical(rng) * (static_cast<float>(M_PI) / 180.0f);
-
-                    // Apply rotation to direction (assuming z-forward, x-right, y-up)
-                    fvec3 spreadDir;
-                    // Rotate horizontal (around y-axis)
-                    spreadDir.x = direction.x * std::cos(angleH) + direction.z * std::sin(angleH);
-                    spreadDir.z = -direction.x * std::sin(angleH) + direction.z * std::cos(angleH);
-                    spreadDir.y = direction.y;
-                    // Rotate vertical (around x-axis)
-                    float tempY = spreadDir.y * std::cos(angleV) - spreadDir.z * std::sin(angleV);
-                    spreadDir.z = spreadDir.y * std::sin(angleV) + spreadDir.z * std::cos(angleV);
-                    spreadDir.y = tempY;
-
-                    new Projectile(ProjectileType::PELLET, position, spreadDir.normalized());
-                }
-                break;
-            case WeaponType::CHAINGUN:
-                new Projectile(ProjectileType::BULLET, position, direction);
-                break;
-            case WeaponType::ROCKET_LAUNCHER:
-                new Projectile(ProjectileType::ROCKET, position, direction);
-                break;
-            case WeaponType::PLASMA_RIFLE:
-                new Projectile(ProjectileType::PLASMA, position, direction);
-                break;
-            case WeaponType::BFG9000:
-                new Projectile(ProjectileType::BFG_BALL, position, direction);
-                break;
+    void TryShot(){
+        if (currentState == WeaponState::READY) {
+            frameTimer = 0.;
+            currentFrame = 0;
+            if (frameTimer > 5) {
+                currentState = WeaponState::FIRING;
+                currentFlashFrame = 0;
+                flashTimer = 0.;
+            }
+            else {
+                currentState = WeaponState::REFIRING;
+                currentFlashFrame = 0;
+                flashTimer = 0.;
+            }
         }
+        return;
     }
+
+    bool GetCurrentFlashFrame(gl_texture& frame) const {
+        if (currentFlashFrame == -1)
+            return false;
+
+        frame = flash[currentFlashFrame].texture;
+        return true;
+    }
+
+    bool GetCurrentFrame(gl_texture& frame) {
+        if (currentState == WeaponState::PICK_UP)
+            return false;
+        frame = frames[static_cast<int>(currentState)][currentFrame].texture;
+        return true;
+    }
+
+    bool lockChange() const {
+        return !(currentState == WeaponState::READY || currentState ==  WeaponState::PICK_UP);
+    }
+};
+
+const DoomGunInitiator Pistol = DoomGunInitiator{
+    "PISG",
+    "PISF",
+    0.4,
+    {
+            { {'A', 10} },
+            { {'B', 1}, {'C', 1}, {'B', 5}, {'A', 1} },
+            { {'C', 1}, {'B', 5}, {'A', 1} }
+    },
+    { {'A', 1} }
+};
+
+const DoomGunInitiator Shotgun = DoomGunInitiator{
+    "SHTG",
+    "SHTF",
+    0.6,
+    {
+            { {'A', 10} },  // Pickup/wield (matched to pistol for consistency)
+            { {'A', 10}, {'B', 5}, {'C', 5}, {'D', 4}, {'C', 5}, {'B', 5}, {'A', 10} },  // Fire (A10 B5 C5 D4 C5 B5 A10; total ~44 tics)
+            { {'A', 10}, {'B', 5}, {'C', 5}, {'D', 4}, {'C', 5}, {'B', 5}, {'A', 10} }   // Refire (same as fire)
+    },
+    { {'A', 7} }  // Flash (averaged duration; appears during early fire frames)
 };
 #endif //DOOM_WEAPON_H

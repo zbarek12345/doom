@@ -34,6 +34,8 @@ class HudRender {
 	static void RenderHealth();
 	static void RenderArmor();
 	static void RenderAmmo();
+	static void RenderGun();
+
 public:
 	static void LoadHudTextures();
 

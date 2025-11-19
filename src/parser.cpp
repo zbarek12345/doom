@@ -643,6 +643,7 @@ cleanup:
 	throw std::runtime_error("Error parsing file");
 }
 
+
 std::vector<std::string> Parser::get_levels() const {
 	auto res = std::vector<std::string>();
 	for (const auto &map: content->maps) {

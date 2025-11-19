@@ -20,7 +20,6 @@ class Parser {
   };
   game_content* content = nullptr;
 
-
   template<class T>
   T *load_lump(FILE *file, original_classes::lump pointer);
 public:

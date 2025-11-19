@@ -105,14 +105,10 @@ void HudRender::Render() {
 	glPushMatrix();
 	glLoadIdentity();
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	RenderHealth();
 	RenderArmor();
 	RenderAmmo();
-
-	glDisable(GL_BLEND);
+	RenderGun();
 
 	glPopMatrix();                 // modelview
 	glMatrixMode(GL_PROJECTION);
@@ -300,6 +296,51 @@ void HudRender::RenderAmmo() {
 		glEnd();
 		num_start_x += s;
 	}
+
+	glDisable(GL_BLEND);
+	glDisable(GL_TEXTURE_2D);
+}
+
+const int wep_mul = 2;
+void HudRender::RenderGun() {
+	gl_texture WeaponTexture;
+	auto res = Player::GetCurrentWeaponFrame(WeaponTexture);
+	if (!res)
+		return;
+
+	gl_texture FlashTexture;
+	auto res2 = Player::GetCurrentFlashFrame(FlashTexture);
+
+	auto gunX = (w - WeaponTexture.w*wep_mul)/2.;
+	auto gunW = WeaponTexture.w*wep_mul;
+	auto gunH = WeaponTexture.h*wep_mul;
+
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glBindTexture(GL_TEXTURE_2D, WeaponTexture.texture_id);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0, 1); glVertex2f(gunX, 0);
+		glTexCoord2f(1, 1); glVertex2f(gunX + gunW, 0);
+		glTexCoord2f(1, 0); glVertex2f(gunX + gunW, gunH);
+		glTexCoord2f(0, 0); glVertex2f(gunX, gunH);
+	glEnd();
+
+	if (!res2)
+		return;
+	auto flashX = (w - FlashTexture.w*wep_mul)/2.;
+	auto flashW = FlashTexture.w*wep_mul;
+	auto flashL = gunH;
+	auto flashH = FlashTexture.h*wep_mul+flashL;
+	glBindTexture(GL_TEXTURE_2D, FlashTexture.texture_id);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0, 1); glVertex2f(flashX, flashL);
+		glTexCoord2f(1, 1); glVertex2f(flashX + flashW, flashL);
+		glTexCoord2f(1, 0); glVertex2f(flashX + flashW, flashH);
+		glTexCoord2f(0, 0); glVertex2f(flashX, flashH);
+	glEnd();
 
 	glDisable(GL_BLEND);
 	glDisable(GL_TEXTURE_2D);

@@ -14,10 +14,11 @@ int16_t Player::armor = 0;
 int16_t Player::health = 100;
 uint16_t Player::ammo[] = {24, 50, 60, 40};
 uint16_t Player::max_ammo[] = {200, 100, 100, 600};
-uint8_t Player::current_weapon = 3;
-bool Player::has_weapon[] = {1,0,1,1,1,1,1,1,1};
+uint8_t Player::current_weapon = 2;
+bool Player::has_weapon[] = {0,0,1,1,0,0,0,0,0};
 bool Player::next_weapon_selected = false;
 double Player::next_weapon_selected_timer = 0;
+std::vector<DoomGunInterface*> Player::weapons={};
 
 Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	this->position = position;
@@ -95,7 +96,7 @@ void Player::Update(double deltaTime) {
 		auto cam_vec = camera->get3DVector();
 		new_map->TryActivateRay(cam_vec, current_sector, pos);
 	}
-
+	weapons[current_weapon]->Update(deltaTime);
 }
 
 void Player::Render() {
@@ -103,27 +104,49 @@ void Player::Render() {
 	glTranslatef(-pos.x, -pos.y, pos.z);
 }
 
+bool Player::CanChangeWeapon() {
+	if (weapons[current_weapon]==nullptr)
+		return true;
+	return !weapons[current_weapon]->lockChange();
+}
+
 void Player::SelectPreviousWeapon() {
+	if (!Player::CanChangeWeapon())
+		return;
 	printf("Weapon %hhu selected", current_weapon);
 	int i = current_weapon;
 	do {
 		i = (i + NUM_WEAPONS - 1) % NUM_WEAPONS;
 	} while (!has_weapon[i]);
 	current_weapon = i;
+	if (weapons[current_weapon])
+		weapons[current_weapon]->Select();
 	printf("Weapon %hhu selected", current_weapon);
 }
 
 void Player::SelectNextWeapon() {
+	if (!Player::CanChangeWeapon())
+		return;
 	int i = current_weapon;
 	do {
 		i = (i + 1) % NUM_WEAPONS;
 	} while (!has_weapon[i]);
 	current_weapon = i;
+	if (weapons[current_weapon])
+		weapons[current_weapon]->Select();
 	printf("Weapon %hhu selected", current_weapon);
 }
 
-gl_texture Player::GetCurrentWeaponTexture() {
+bool Player::GetCurrentFlashFrame(gl_texture &frame) {
+	if (weapons[current_weapon] != nullptr)
+		return weapons[current_weapon]->GetCurrentFlashFrame(frame);
+	return false;
+}
 
+bool Player::GetCurrentWeaponFrame(gl_texture &frame) {
+	if (weapons[current_weapon] != nullptr)
+		return weapons[current_weapon]->GetCurrentFrame(frame);
+	return false;
 }
 
 WeaponType Player::GetCurrentWeaponType() {
@@ -131,6 +154,8 @@ WeaponType Player::GetCurrentWeaponType() {
 }
 
 bool Player::TryPickWeapon(uint8_t weapon_index) {
+	if (CanChangeWeapon())
+		return false;
 	if (has_weapon[weapon_index]) {
 		uint8_t old_weapon = current_weapon;
 		current_weapon = weapon_index;
@@ -154,4 +179,15 @@ uint8_t Player::GetCurrentAmmoType() {
 	if (t== WeaponType::BFG9000 || t == WeaponType::PLASMA_RIFLE)
 		return 3;
 	return 4;
+}
+
+void Player::TryShoot() {
+	if (weapons[current_weapon]!=nullptr)
+		weapons[current_weapon]->TryShot();
+}
+
+void Player::BindWeapons(std::vector<DoomGunInterface *> weapons) {
+	assert(weapons.size() == NUM_WEAPONS);
+	Player::weapons = weapons;
+	weapons[current_weapon]->Select();
 }

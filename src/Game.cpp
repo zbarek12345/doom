@@ -11,6 +11,7 @@ Game::Game(char* file_path) {
     player = nullptr;
     window = nullptr;
     gl_context = nullptr;
+    std::vector<DoomGunInterface*> Weapons;
 }
 
 Game::Game(char* file_path, char** patch_files){}
@@ -83,7 +84,50 @@ void Game::SelectMap(int id) {
     }
 }
 
+DoomGunInterface* Game::LoadWeapon(DoomGunInitiator initiator) {
+    const double tick = 1/35.;
+    TexBinder* tb = current_map->texture_binder;
+    DoomGunInterface* weapon = new DoomGunInterface();
+    weapon->SetDelay(initiator.pickupDelay);
+
+    std::vector<animationFrame> animations[3] = {};
+    for (int i = 0; i < 3; i++) {
+        std::vector<animationFrame> frames;
+        for (auto &frame: initiator.loaders[i]) {
+            gl_texture anim_frame = tb->GetTexture((initiator.base_texture_name + frame.let+"0").c_str(), TextureType::WeaponTexture);
+            frames.push_back(animationFrame{anim_frame,frame.time*tick});
+        }
+        animations[i]=frames;
+    }
+    weapon->SetAnimationFrames(animations);
+
+    std::vector<animationFrame> flashFrames;
+    for (auto &frame: initiator.flashLoader) {
+        gl_texture anim_frame = tb->GetTexture((initiator.flash_texture_name + frame.let + "0").c_str(), TextureType::WeaponTexture);
+        flashFrames.push_back(animationFrame{anim_frame,frame.time*tick});
+    }
+
+    weapon->SetFlashFrames(flashFrames);
+    return weapon;
+}
+
+void Game::GenerateWeapons() {
+    Weapons = {
+        nullptr,
+        nullptr,
+        LoadWeapon(Pistol),
+        LoadWeapon(Shotgun),
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    };
+}
+
 void Game::Run() {
+    GenerateWeapons();
+    player->BindWeapons(Weapons);
     bool running = true;
     SDL_Event event;
     double deltaTime = 0.0;
@@ -109,6 +153,8 @@ void Game::Run() {
                 screen_height = event.window.data2;
                 size_changed = true;
             }
+            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
+                player->TryShoot();
         }
 
         if (player) {
