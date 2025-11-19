@@ -14,8 +14,8 @@ public:
    float GetYaw() const { return yaw; }
    float GetPitch() const { return pitch; }
 
-   fvec2 get2DVector();
-   fvec3 get3DVector();
+   fvec2 get2DVector() const;
+   fvec3 get3DVector() const;
 
 
 private:

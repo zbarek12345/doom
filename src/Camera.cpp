@@ -18,7 +18,7 @@ void Camera::HandleEvent(SDL_Event* event, double deltaTime) {
     if (pitch < -89.0f) pitch = -89.0f;
 }
 
-fvec2 Camera::get2DVector() {
+fvec2 Camera::get2DVector() const {
     float rad_yaw = yaw * M_PI / 180.0f; // Convert degrees to radians
     return fvec2{
         sinf(rad_yaw),
@@ -26,7 +26,7 @@ fvec2 Camera::get2DVector() {
     };
 }
 
-fvec3 Camera::get3DVector() {
+fvec3 Camera::get3DVector() const {
     float rad_yaw = yaw * M_PI / 180.0f; // Convert degrees to radians
     float rad_pitch = pitch * M_PI / 180.0f;
 

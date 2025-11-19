@@ -101,4 +101,23 @@ public:
 #define MegaArmorCollectible(pos) ArmorCollectibleC(pos, 200, 200, "ARM2", "AB");
 
 #pragma endregion
+
+#pragma region Health
+class BasicHealers : public AnimatedEntity{
+	uint16_t bonus;
+	uint16_t max_val;
+	public:
+	BasicHealers(svec2 pos, uint16_t bonus, uint16_t max_val, std::string base, std::string tex_sequence);
+
+	bool AllowCollection() const override;
+
+	void Collect() const override;
+
+};
+
+#define MediKit(pos) BasicHealers(pos, 25, 100, "MEDI", "A");
+#define StimPack(pos) BasicHealers(pos, 10, 100, "STIM", "A");
+#define BottleOfWater(pos) BasicHealers(pos, 1, 200, "BON1", "ABCDCB");
+#define Supercharge(pos) BasicHealers(pos, 100, 200, "SOUL", "ABCDCB");
+#pragma endregion Health
 #endif //DOOM_COLLECTIBLES_H

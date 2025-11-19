@@ -369,6 +369,12 @@ NewModels::Map *Parser::generateMap(int id) {
 				case 0x30:
 					entity = new SpaceShipEntity(pos);
 					break;
+				case 0x7DE:
+					entity = new BottleOfWater(pos);
+					break;
+				case 0x7DD:
+					entity = new Supercharge(pos);
+					break;
 				case 0x7DF:
 					entity = new ArmorBonusCollectible(pos);
 					break;

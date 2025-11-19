@@ -1,4 +1,8 @@
 #include "headers/game.h"
+#include "headers/HudRender.h"
+
+uint16_t Game::screen_width = 800;
+uint16_t Game::screen_height = 600;
 
 Game::Game(char* file_path) {
     parser = new Parser();
@@ -54,6 +58,8 @@ int Game::Init() {
         SDL_Quit();
         return 1;
     }
+
+    HudRender::LoadHudTextures();
 
     SDL_GL_SetSwapInterval(1);
     glEnable(GL_DEPTH_TEST);
@@ -138,6 +144,8 @@ void Game::Run() {
             render_time = fmod(render_time, fps_time);
         }
 
+        HudRender::Render();
+
         SDL_GL_SwapWindow(window);
         err = glGetError();
         if (err != GL_NO_ERROR) {
@@ -151,4 +159,9 @@ void Game::Run() {
 
         // printf("Dt:%f\n", deltaTime);
     }
+}
+
+void Game::GetScreenSize(uint16_t &width, uint16_t &height){
+    width = screen_width;
+    height = screen_height;
 }

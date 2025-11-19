@@ -10,6 +10,7 @@ AnimatedEntity::AnimatedEntity(const svec2 pos, uint16_t width, std::string base
 }
 
 void AnimatedEntity::bindTextures(std::vector<gl_texture> &textures) {
+	current_ = rand()%textures.size();
 	this->textures = textures;
 	tex = textures[current_];
 }

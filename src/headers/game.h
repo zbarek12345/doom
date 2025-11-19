@@ -16,7 +16,10 @@ public:
 	void SelectMap(int id);
 	void Run();
 
+	static void GetScreenSize(uint16_t& width, uint16_t& height);
+
 private:
+	static uint16_t screen_width, screen_height;
 	Parser* parser;
 	NewModels::Map* current_map;
 	Player* player;

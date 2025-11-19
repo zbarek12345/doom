@@ -212,3 +212,14 @@ void ArmorCollectibleC::Collect() const {
 	Player::armor=std::min(static_cast<uint16_t>(Player::armor+bonus), max_val);
 }
 
+BasicHealers::BasicHealers(svec2 pos, uint16_t bonus, uint16_t max_val, std::string base, std::string tex_sequence)
+	: AnimatedEntity(pos, 20, base, tex_sequence, false, EntityPosType::Floor), bonus(bonus), max_val(max_val) {}
+
+bool BasicHealers::AllowCollection() const {
+	return Player::health < max_val;
+}
+
+void BasicHealers::Collect() const {
+	Player::health=std::min(static_cast<uint16_t>(Player::health+bonus), max_val);
+}
+
