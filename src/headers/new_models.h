@@ -13,6 +13,7 @@
 #include <iostream>
 #include <set>
 #include "Entity.h"
+#include "new_models.h"
 #include "TexBinder.h"
 #include "vec2.h"
 #include "vec3.h"
@@ -695,6 +696,7 @@ namespace NewModels{
 			std::vector<Sector> sectors;
     		std::vector<Wall*> walls;
     		std::vector<Entity*> entities;
+    		static std::set<ActionPerformer*> actions;
 			svec3 player_start = {0,0,0};
 			uint16_t player_start_angle;
 			TexBinder* texture_binder;
@@ -778,7 +780,11 @@ namespace NewModels{
 				last_player_pos = fvec2(player_pos.x, player_pos.z);
 			}
 
-
+			void TryActivateRay(fvec3& lookVector, Sector* currentSector, fvec3& start_pos) {
+				bool target_hit;
+				svec3 start_pos_s = (svec3)start_pos;
+				RayCaster::PerformRayCast( lookVector, currentSector, start_pos_s, RayCaster::Interaction, target_hit);
+			}
 
     		~Map() {
 				for (auto& wall : walls) {

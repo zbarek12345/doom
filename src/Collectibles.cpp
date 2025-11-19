@@ -5,6 +5,7 @@
 #include "headers/Collectibles.h"
 
 #include "headers/Player.h"
+#include "headers/Weapon.h"
 
 WeaponCollectible::WeaponCollectible(svec2 pos, CollectibleType type)
 	: Entity(pos, 20,
@@ -55,30 +56,30 @@ bool WeaponCollectible::AllowCollection() const {
 	switch (type) {
 		case CollectibleType::BFUG:
 			ammoid = 3;
-			wepId = static_cast<int>(Weapon::BFG);
+			wepId = static_cast<int>(WeaponType::BFG9000);
 			break;
 		case CollectibleType::MGUN:
 			ammoid = 0;
-			wepId = static_cast<int>(Weapon::Minigun);
+			wepId = static_cast<int>(WeaponType::CHAINGUN);
 			break;
 		case CollectibleType::CSAW:
-			wepId = static_cast<int>(Weapon::Chainsaw);
+			wepId = static_cast<int>(WeaponType::CHAINSAW);
 			break;
 		case CollectibleType::PLAS:
 			ammoid = 3;
-			wepId = static_cast<int>(Weapon::Plasma);
+			wepId = static_cast<int>(WeaponType::PLASMA_RIFLE);
 			break;
 		case CollectibleType::LAUN:
 			ammoid = 2;
-			wepId = static_cast<int>(Weapon::Launcher);
+			wepId = static_cast<int>(WeaponType::ROCKET_LAUNCHER);
 			break;
 		case CollectibleType::SHOT:
 			ammoid = 1;
-			wepId = static_cast<int>(Weapon::Shotgun);
+			wepId = static_cast<int>(WeaponType::SHOTGUN);
 			break;
 		case CollectibleType::SGN2:
 			ammoid = 1;
-			wepId = static_cast<int>(Weapon::SShotgun);
+			wepId = static_cast<int>(WeaponType::SUPER_SHOTGUN);
 			break;
 		case CollectibleType::SHEL:
 			ammoid = 1;
@@ -121,41 +122,41 @@ void WeaponCollectible::Collect() const {
 			ammoid = 3;
 			ammo_amount = 40;
 			collects = true;
-			wepId = static_cast<int>(Weapon::BFG);
+			wepId = static_cast<int>(WeaponType::BFG9000);
 			break;
 		case CollectibleType::MGUN:
 			ammoid = 0;
 			ammo_amount = 20;
 			collects = true;
-			wepId = static_cast<int>(Weapon::Minigun);
+			wepId = static_cast<int>(WeaponType::CHAINGUN);
 			break;
 		case CollectibleType::CSAW:
 			collects = true;
-			wepId = static_cast<int>(Weapon::Chainsaw);
+			wepId = static_cast<int>(WeaponType::CHAINSAW);
 			break;
 		case CollectibleType::PLAS:
 			ammoid = 3;
 			ammo_amount = 20;
 			collects = true;
-			wepId = static_cast<int>(Weapon::Plasma);
+			wepId = static_cast<int>(WeaponType::PLASMA_RIFLE);
 			break;
 		case CollectibleType::LAUN:
 			ammoid = 2;
 			ammo_amount = 2;
 			collects = true;
-			wepId = static_cast<int>(Weapon::Launcher);
+			wepId = static_cast<int>(WeaponType::ROCKET_LAUNCHER);
 			break;
 		case CollectibleType::SHOT:
 			ammoid = 1;
 			ammo_amount = 8;
 			collects = true;
-			wepId = static_cast<int>(Weapon::Shotgun);
+			wepId = static_cast<int>(WeaponType::SHOTGUN);
 			break;
 		case CollectibleType::SGN2:
 			ammoid = 1;
 			ammo_amount = 8;
 			collects = true;
-			wepId = static_cast<int>(Weapon::SShotgun);
+			wepId = static_cast<int>(WeaponType::SUPER_SHOTGUN);
 			break;
 		case CollectibleType::SHEL:
 			ammoid = 1;

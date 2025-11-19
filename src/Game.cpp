@@ -86,37 +86,12 @@ void Game::Run() {
     SDL_Event event;
     double deltaTime = 0.0;
     double fps = 120.0f;
-    double fps_time = 1.0f/fps;
+    double fps_time = 1.0f / fps;
     double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();
     //todo
     // SDL_SetRelativeMouseMode(SDL_TRUE);
-
-    glViewport(0, 0, 800, 600);
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR) {
-        std::cerr << "OpenGL error after glViewport: " << err << std::endl;
-    }
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    float fov = 60.0f, aspect = 800.0f / 600.0f, nr = 1.0f, fr = 65536.0f;
-    float f = 1.0f / tanf(fov * 3.14159f / 360.0f);
-    float proj_matrix[16] = {
-        f / aspect, 0, 0, 0,
-        0, f, 0, 0,
-        0, 0, (fr + nr) / (nr - fr), -1,
-        0, 0, (2 * fr * nr) / (nr - fr), 0
-    };
-    glLoadMatrixf(proj_matrix);
-
-    glMatrixMode(GL_MODELVIEW);
-
-    err = glGetError();
-    if (err != GL_NO_ERROR) {
-        std::cerr << "OpenGL error after projection setup: " << err << std::endl;
-    }
+    bool size_changed = true;  // Force initial projection setup
 
     while (running) {
         // printf("start\n");
@@ -127,6 +102,11 @@ void Game::Run() {
             if (event.type == SDL_MOUSEMOTION && player) {
                 player->HandleEvent(&event, deltaTime);
             }
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                screen_width = event.window.data1;
+                screen_height = event.window.data2;
+                size_changed = true;
+            }
         }
 
         if (player) {
@@ -136,12 +116,37 @@ void Game::Run() {
 
         if (current_map) current_map->Update(deltaTime);
 
+        // Set viewport consistently at the start of each frame
+        glViewport(0, 0, screen_width, screen_height);
+
+        // Update projection if size changed
+        if (size_changed) {
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+
+            float fov = 60.0f;
+            float aspect = static_cast<float>(screen_width) / static_cast<float>(screen_height);
+            float nr = 1.0f;
+            float fr = 65536.0f;
+            float f = 1.0f / tanf(fov * 3.14159f / 360.0f);
+            float proj_matrix[16] = {
+                f / aspect, 0, 0, 0,
+                0, f, 0, 0,
+                0, 0, (fr + nr) / (nr - fr), -1,
+                0, 0, (2 * fr * nr) / (nr - fr), 0
+            };
+            glLoadMatrixf(proj_matrix);
+
+            glMatrixMode(GL_MODELVIEW);
+            size_changed = false;
+        }
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        if (render_time>fps_time) {
+        if (render_time > fps_time) {
 
             if (player) player->Render();
             if (current_map) current_map->Render();
@@ -153,7 +158,7 @@ void Game::Run() {
 
 
         SDL_GL_SwapWindow(window);
-        err = glGetError();
+        GLenum err = glGetError();
         if (err != GL_NO_ERROR) {
             std::cerr << "OpenGL error after SDL_GL_SwapWindow: " << err << std::endl;
         }

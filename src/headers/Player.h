@@ -6,17 +6,6 @@
 #include "Camera.h"
 #include "map.h"
 #include "new_models.h"
-enum class Weapon {
-   Fist,
-   Pistol,
-   Shotgun,
-   Minigun,
-   Chainsaw,
-   SShotgun,
-   Launcher,
-   Plasma,
-   BFG
-};
 
 class Player {
 public:
