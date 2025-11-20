@@ -26,6 +26,8 @@ public:
   ~Parser() {
     delete content;
   }
+
+  OriginalTextureRenderer* GetTextureRenderer() const;
   ///Loads level into parser,
   void load_file(char *file_name);
 

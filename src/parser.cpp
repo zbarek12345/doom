@@ -35,6 +35,10 @@ T *Parser::load_lump(FILE *file, original_classes::lump pointer) {
 	return data;
 }
 
+OriginalTextureRenderer * Parser::GetTextureRenderer() const {
+	return &content->original_texture_renderer;
+}
+
 ///Loads the file and reads data within.
 void Parser::load_file(char *file_name) {
 	FILE *file = fopen(file_name, "rb");

@@ -87,6 +87,7 @@ void Game::SelectMap(int id) {
 DoomGunInterface* Game::LoadWeapon(DoomGunInitiator initiator) {
     const double tick = 1/35.;
     TexBinder* tb = current_map->texture_binder;
+    OriginalTextureRenderer* renderer = parser->GetTextureRenderer();
     DoomGunInterface* weapon = new DoomGunInterface();
     weapon->SetDelay(initiator.pickupDelay);
 
@@ -102,18 +103,20 @@ DoomGunInterface* Game::LoadWeapon(DoomGunInitiator initiator) {
     weapon->SetAnimationFrames(animations);
 
     std::vector<animationFrame> flashFrames;
+    std::vector<svec2> offsets;
     for (auto &frame: initiator.flashLoader) {
         gl_texture anim_frame = tb->GetTexture((initiator.flash_texture_name + frame.let + "0").c_str(), TextureType::WeaponTexture);
         flashFrames.push_back(animationFrame{anim_frame,frame.time*tick});
+        offsets.push_back(renderer->getOriginalPatchOffset((initiator.flash_texture_name + frame.let + "0").c_str()));
     }
-
+    weapon->SetFlashOffsets(offsets);
     weapon->SetFlashFrames(flashFrames);
     return weapon;
 }
 
 void Game::GenerateWeapons() {
     Weapons = {
-        nullptr,
+        LoadWeapon(Fists),
         nullptr,
         LoadWeapon(Pistol),
         LoadWeapon(Shotgun),

@@ -86,6 +86,14 @@ bool Entity::Blocks() const {
 
 void Entity::Collect() const {}
 
+svec2 Entity::getPosition() const {
+	return position;
+}
+
+uint16_t Entity::getWidth() const {
+	return width;
+}
+
 std::string Entity::getBaseName() {
 	return base_texture_name;
 }

@@ -15,7 +15,7 @@ int16_t Player::health = 100;
 uint16_t Player::ammo[] = {24, 50, 60, 40};
 uint16_t Player::max_ammo[] = {200, 100, 100, 600};
 uint8_t Player::current_weapon = 2;
-bool Player::has_weapon[] = {0,0,1,1,0,0,0,0,0};
+bool Player::has_weapon[] = {1,0,1,1,0,0,0,0,0};
 bool Player::next_weapon_selected = false;
 double Player::next_weapon_selected_timer = 0;
 std::vector<DoomGunInterface*> Player::weapons={};
@@ -141,6 +141,10 @@ bool Player::GetCurrentFlashFrame(gl_texture &frame) {
 	if (weapons[current_weapon] != nullptr)
 		return weapons[current_weapon]->GetCurrentFlashFrame(frame);
 	return false;
+}
+
+svec2 Player::GetCurrentFlashOffset() {
+	return weapons[current_weapon]->GetFlashOffset();
 }
 
 bool Player::GetCurrentWeaponFrame(gl_texture &frame) {

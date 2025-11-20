@@ -60,6 +60,7 @@ private:
     int16_t currentFlashFrame = -1;
     std::vector<animationFrame> frames[(int)WeaponState::PICK_UP] = {};
     std::vector<animationFrame> flash = {};
+    std::vector<svec2> flashOffsets;
     double frameTimer = 0.;
     size_t currentFrame = 0;
 public:
@@ -78,6 +79,10 @@ public:
 
     void SetFlashFrames(std::vector<animationFrame> flash) {
         this->flash = flash;
+    }
+
+    void SetFlashOffsets(std::vector<svec2> offsets) {
+        this->flashOffsets = offsets;
     }
 
     void Unselect() {
@@ -104,11 +109,14 @@ public:
             }
 
             flashTimer += deltaTime;
-            if (currentFlashFrame != -1 && flashTimer > flash[currentFlashFrame].time) {
-                currentFlashFrame++;
-                flashTimer = 0.;
-                if (currentFlashFrame >= flash.size()) currentFlashFrame = -1;
+            if (flash.size()>0) {
+                if (currentFlashFrame != -1 && flashTimer > flash[currentFlashFrame].time) {
+                    currentFlashFrame++;
+                    flashTimer = 0.;
+                    if (currentFlashFrame >= flash.size()) currentFlashFrame = -1;
+                }
             }
+
 
         }
 
@@ -147,11 +155,15 @@ public:
     }
 
     bool GetCurrentFlashFrame(gl_texture& frame) const {
-        if (currentFlashFrame == -1)
+        if (currentFlashFrame == -1 || flash.size() == 0)
             return false;
 
         frame = flash[currentFlashFrame].texture;
         return true;
+    }
+
+    svec2 GetFlashOffset() const {
+        return flashOffsets[currentFlashFrame];
     }
 
     bool GetCurrentFrame(gl_texture& frame) {
@@ -188,5 +200,17 @@ const DoomGunInitiator Shotgun = DoomGunInitiator{
             { {'A', 10}, {'B', 5}, {'C', 5}, {'D', 4}, {'C', 5}, {'B', 5}, {'A', 10} }   // Refire (same as fire)
     },
     { {'A', 7} }  // Flash (averaged duration; appears during early fire frames)
+};
+
+const DoomGunInitiator Fists = DoomGunInitiator{
+        "PUNG",
+         "",
+         0.2,
+        {
+            {{'A',10}},
+            {{'B',4}, {'C', 4}, {'D',5}, {'C',4}, {'B', 5}},
+            {{'B',4}, {'C', 4}, {'D',5}, {'C',4}}
+        },
+    {}
 };
 #endif //DOOM_WEAPON_H

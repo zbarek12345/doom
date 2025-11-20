@@ -241,6 +241,14 @@ usvec2 OriginalTextureRenderer::getTextureSize(const char *texName, const Origin
 	return {0, 0};
 }
 
+svec2 OriginalTextureRenderer::getOriginalPatchOffset(const char *texName) const {
+	const raw_lump *lump = raw_lump_keeper->GetRawLump(texName);
+	if (!lump || lump->size < 4) return {0, 0};
+	unsigned short w = *reinterpret_cast<uint16_t *>(lump->data+4);
+	unsigned short h = *reinterpret_cast<uint16_t *>(lump->data + 6);
+	return svec2{w, h};
+}
+
 void OriginalTextureRenderer::UnloadCache() {
 	for (auto& texture : textures) {
 		raw_texture_destroy(&texture.second);

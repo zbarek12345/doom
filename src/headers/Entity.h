@@ -46,6 +46,10 @@ public:
 
 	virtual void Collect() const;
 
+	svec2 getPosition() const;
+
+	uint16_t getWidth() const;
+
 	std::string getBaseName();
 
 	std::string getTexSequence();

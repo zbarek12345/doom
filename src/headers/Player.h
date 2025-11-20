@@ -29,6 +29,9 @@ public:
    static void SelectNextWeapon();
 
    static bool GetCurrentFlashFrame(gl_texture& frame);
+
+   static svec2 GetCurrentFlashOffset();
+
    static bool GetCurrentWeaponFrame(gl_texture& frame);
 
    static WeaponType GetCurrentWeaponType();

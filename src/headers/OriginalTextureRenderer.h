@@ -63,6 +63,8 @@ class OriginalTextureRenderer {
 
 	usvec2 getTextureSize(const char *texName, OriginalTextureType t) const;
 
+	svec2 getOriginalPatchOffset(const char *texName) const;
+
 	void UnloadCache();
 
 	~OriginalTextureRenderer();

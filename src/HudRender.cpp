@@ -311,9 +311,9 @@ void HudRender::RenderGun() {
 	gl_texture FlashTexture;
 	auto res2 = Player::GetCurrentFlashFrame(FlashTexture);
 
-	auto gunX = (w - WeaponTexture.w*wep_mul)/2.;
-	auto gunW = WeaponTexture.w*wep_mul;
-	auto gunH = WeaponTexture.h*wep_mul;
+	auto gunX = (w - WeaponTexture.w * wep_mul) / 2.;
+	auto gunW = WeaponTexture.w * wep_mul;
+	auto gunH = WeaponTexture.h * wep_mul;
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
@@ -322,24 +322,36 @@ void HudRender::RenderGun() {
 	glBindTexture(GL_TEXTURE_2D, WeaponTexture.texture_id);
 
 	glBegin(GL_QUADS);
-		glTexCoord2f(0, 1); glVertex2f(gunX, 0);
-		glTexCoord2f(1, 1); glVertex2f(gunX + gunW, 0);
-		glTexCoord2f(1, 0); glVertex2f(gunX + gunW, gunH);
-		glTexCoord2f(0, 0); glVertex2f(gunX, gunH);
+	glTexCoord2f(0, 1); glVertex2f(gunX, 0);
+	glTexCoord2f(1, 1); glVertex2f(gunX + gunW, 0);
+	glTexCoord2f(1, 0); glVertex2f(gunX + gunW, gunH);
+	glTexCoord2f(0, 0); glVertex2f(gunX, gunH);
 	glEnd();
 
 	if (!res2)
+	{
+		glDisable(GL_BLEND);
+		glDisable(GL_TEXTURE_2D);
 		return;
-	auto flashX = (w - FlashTexture.w*wep_mul)/2.;
-	auto flashW = FlashTexture.w*wep_mul;
-	auto flashL = gunH;
-	auto flashH = FlashTexture.h*wep_mul+flashL;
+	}
+
+	auto offsets = Player::GetCurrentFlashOffset();
+
+	auto scaled_left_offset = offsets.x * wep_mul;
+	auto scaled_top_offset = offsets.y * wep_mul;
+	auto flashW = FlashTexture.w * wep_mul;
+	auto flashH = FlashTexture.h * wep_mul;
+
+	auto flashX = (w / 2.) - scaled_left_offset;
+	auto flash_bottom_y = scaled_top_offset - flashH;
+	auto flash_top_y = scaled_top_offset;
+
 	glBindTexture(GL_TEXTURE_2D, FlashTexture.texture_id);
 	glBegin(GL_QUADS);
-		glTexCoord2f(0, 1); glVertex2f(flashX, flashL);
-		glTexCoord2f(1, 1); glVertex2f(flashX + flashW, flashL);
-		glTexCoord2f(1, 0); glVertex2f(flashX + flashW, flashH);
-		glTexCoord2f(0, 0); glVertex2f(flashX, flashH);
+	glTexCoord2f(0, 1); glVertex2f(flashX, flash_bottom_y);
+	glTexCoord2f(1, 1); glVertex2f(flashX + flashW, flash_bottom_y);
+	glTexCoord2f(1, 0); glVertex2f(flashX + flashW, flash_top_y);
+	glTexCoord2f(0, 0); glVertex2f(flashX, flash_top_y);
 	glEnd();
 
 	glDisable(GL_BLEND);
