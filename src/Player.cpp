@@ -85,7 +85,7 @@ void Player::HandleEvent(SDL_Event* event, double deltaTime) {
 }
 
 void Player::Update(double deltaTime) {
-	float speed = 100.0f * deltaTime;
+	float speed = 350.0f * deltaTime;
 	//Update player's postion only once;
 	movement_vector = movement_vector.normalized()*speed;
 	new_map->HandleMovement(movement_vector, pos, current_sector);
