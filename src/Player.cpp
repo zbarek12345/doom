@@ -186,8 +186,14 @@ uint8_t Player::GetCurrentAmmoType() {
 }
 
 void Player::TryShoot() {
-	if (weapons[current_weapon]!=nullptr)
-		weapons[current_weapon]->TryShot();
+	if (weapons[current_weapon]!=nullptr) {
+		auto at = GetCurrentAmmoType();
+		if (at == 4)
+			return;
+		if (Player::ammo[at] > 0)
+			ammo[at]-=weapons[current_weapon]->TryShot();
+	}
+
 }
 
 void Player::BindWeapons(std::vector<DoomGunInterface *> weapons) {

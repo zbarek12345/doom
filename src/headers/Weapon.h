@@ -136,7 +136,7 @@ public:
         }
     }
 
-    void TryShot(){
+    bool TryShot(){
         if (currentState == WeaponState::READY) {
             frameTimer = 0.;
             currentFrame = 0;
@@ -150,8 +150,9 @@ public:
                 currentFlashFrame = 0;
                 flashTimer = 0.;
             }
+            return true;
         }
-        return;
+        return false;
     }
 
     bool GetCurrentFlashFrame(gl_texture& frame) const {
