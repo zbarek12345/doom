@@ -373,6 +373,21 @@ NewModels::Map *Parser::generateMap(int id) {
 				case 0x30:
 					entity = new SpaceShipEntity(pos);
 					break;
+				case 0x7D1:
+					entity = new ShotgunCollectible(pos);
+					break;
+				case 0x7D2:
+					entity = new MinigunCollectible(pos);
+					break;
+				case 0x7D3:
+					entity= new LauncherCollectible(pos);
+					break;
+				case 0x7D8:
+					entity = new ShellCollectible(pos);
+					break;
+				case 0x801:
+					entity = new BoxOfShellsCollectible(pos);
+					break;
 				case 0x7DE:
 					entity = new BottleOfWater(pos);
 					break;

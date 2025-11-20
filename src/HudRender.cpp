@@ -227,10 +227,10 @@ void HudRender::RenderArmor() {
     for (uint8_t j = 3 - i; j < 3; j++) {
         glBindTexture(GL_TEXTURE_2D, numbers.numbers[nums[j]].texture_id);
         glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex2f(num_start_x, y_pos);
-        glTexCoord2f(1, 0); glVertex2f(num_start_x + s, y_pos);
-        glTexCoord2f(1, 1); glVertex2f(num_start_x + s, y_pos + s);
-        glTexCoord2f(0, 1); glVertex2f(num_start_x, y_pos + s);
+        glTexCoord2f(0, 1); glVertex2f(num_start_x, y_pos);
+        glTexCoord2f(1, 1); glVertex2f(num_start_x + s, y_pos);
+        glTexCoord2f(1, 0); glVertex2f(num_start_x + s, y_pos + s);
+        glTexCoord2f(0, 0); glVertex2f(num_start_x, y_pos + s);
         glEnd();
         num_start_x += s;
     }

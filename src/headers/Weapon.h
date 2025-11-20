@@ -202,6 +202,18 @@ const DoomGunInitiator Shotgun = DoomGunInitiator{
     { {'A', 7} }  // Flash (averaged duration; appears during early fire frames)
 };
 
+const DoomGunInitiator ChainGun = DoomGunInitiator{
+        "CHGG",
+        "CHGF",
+    0.5,
+{
+                { {'A', 10} },  // Pickup/wield (matched to pistol for consistency)
+                { {'A', 1}, {'B', 4},{'A', 1} },  // Fire (A10 B5 C5 D4 C5 B5 A10; total ~44 tics)
+                {{'A', 1},{'B', 4},  }   // Refire (same as fire)
+            },
+{ {'A', 4} }
+};
+
 const DoomGunInitiator Fists = DoomGunInitiator{
         "PUNG",
          "",

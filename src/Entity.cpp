@@ -84,7 +84,7 @@ bool Entity::Blocks() const {
 	return this->blocks;
 }
 
-void Entity::Collect() const {}
+void Entity::Collect() {}
 
 svec2 Entity::getPosition() const {
 	return position;
@@ -100,6 +100,10 @@ std::string Entity::getBaseName() {
 
 std::string Entity::getTexSequence() {
 	return tex_sequence;
+}
+
+bool Entity::isToRemove() const {
+	return taken;
 }
 
 void Entity::getPosAndRad(svec2 &pos, uint16_t &width) const {

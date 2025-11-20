@@ -108,10 +108,10 @@ bool WeaponCollectible::AllowCollection() const {
 		default: ;
 	}
 
-	return !Player::has_weapon[wepId] || Player::ammo[ammoid] < ammo_amount;
+	return !Player::has_weapon[wepId] || Player::ammo[ammoid] < Player::max_ammo[ammoid];
 }
 
-void WeaponCollectible::Collect() const {
+void WeaponCollectible::Collect() {
 
 	auto wepId = 0;
 	auto ammoid = 0;
@@ -196,9 +196,9 @@ void WeaponCollectible::Collect() const {
 	if (collects) {
 		Player::has_weapon[wepId] = true;
 	}
-	else {
-		Player::ammo[ammoid]+=std::min(static_cast<uint16_t>(Player::ammo[ammoid]+ammo_amount), Player::max_ammo[ammoid]);
-	}
+
+	Player::ammo[ammoid]=std::min(static_cast<uint16_t>(Player::ammo[ammoid]+ammo_amount), Player::max_ammo[ammoid]);
+	taken = true;
 }
 
 ArmorCollectibleC::ArmorCollectibleC(svec2 pos, uint16_t bonus, uint16_t max_val, std::string base,
@@ -209,8 +209,9 @@ bool ArmorCollectibleC::AllowCollection() const {
 	return Player::armor < max_val;
 }
 
-void ArmorCollectibleC::Collect() const {
+void ArmorCollectibleC::Collect() {
 	Player::armor=std::min(static_cast<uint16_t>(Player::armor+bonus), max_val);
+	taken = true;
 }
 
 BasicHealers::BasicHealers(svec2 pos, uint16_t bonus, uint16_t max_val, std::string base, std::string tex_sequence)
@@ -220,7 +221,8 @@ bool BasicHealers::AllowCollection() const {
 	return Player::health < max_val;
 }
 
-void BasicHealers::Collect() const {
+void BasicHealers::Collect() {
 	Player::health=std::min(static_cast<uint16_t>(Player::health+bonus), max_val);
+	taken = true;
 }
 

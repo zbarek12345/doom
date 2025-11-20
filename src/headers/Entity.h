@@ -17,6 +17,7 @@ enum class EntityPosType{
 
 class Entity {
 protected:
+	bool taken = false;
 	svec2 position;
 	uint16_t width;
 	gl_texture tex;
@@ -44,7 +45,7 @@ public:
 
 	bool Blocks() const;
 
-	virtual void Collect() const;
+	virtual void Collect();
 
 	svec2 getPosition() const;
 
@@ -53,6 +54,8 @@ public:
 	std::string getBaseName();
 
 	std::string getTexSequence();
+
+	bool isToRemove() const;
 
 	///Retrieves position and block treshold/ capture treshold.
 	void getPosAndRad(svec2& pos, uint16_t& width) const;

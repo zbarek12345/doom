@@ -10,8 +10,8 @@
 #include <CDTUtils.h>
 #include <climits>
 #include <cstring>
-#include <iostream>
 #include <set>
+
 #include "Entity.h"
 #include "new_models.h"
 #include "TexBinder.h"
@@ -513,10 +513,10 @@ namespace NewModels{
 		bool AllowWalkThrough(const Sector* start) const {
 			if (other_sector == nullptr || flags_.Impassible)
 				return false;
-
+			return true;
 			const auto t_sec = start == this_sector ? this_sector : other_sector;
 			const auto o_sec = start == this_sector ? other_sector : this_sector;
-			const auto res = t_sec->floor_height+20 < o_sec->floor_height ||
+			const auto res = t_sec->floor_height+35 < o_sec->floor_height ||
 				o_sec->ceil_height - o_sec->floor_height < 56;
 			return !res;
 		}
@@ -620,8 +620,72 @@ namespace NewModels{
 			return false;
 		}
 
+		static float check_object_collision(const svec2& obj_pos, uint16_t width, const fvec3& player_pos, const fvec3& move_vec, bool& collides) {
+			float R = 16.0f + static_cast<float>(width);
+			float ox = static_cast<float>(obj_pos.x);
+			float oz = static_cast<float>(obj_pos.y);
+			float px = player_pos.x;
+			float pz = player_pos.z;
+			float vx = move_vec.x;
+			float vz = move_vec.z;
+			float dx = px - ox;
+			float dz = pz - oz;
+			float D2 = dx * dx + dz * dz;
+			float R2 = R * R;
+
+			if (D2 <= R2) {
+				collides = true;
+				return 0.0f;
+			}
+
+			float a = vx * vx + vz * vz;
+			if (a == 0.0f) {
+				collides = false;
+				return std::numeric_limits<float>::infinity();
+			}
+
+			float b = 2.0f * (dx * vx + dz * vz);
+			float c = D2 - R2;
+			float delta = b * b - 4.0f * a * c;
+
+			if (delta < 0.0f) {
+				collides = false;
+				return std::numeric_limits<float>::infinity();
+			}
+
+			float sqrt_delta = std::sqrt(delta);
+			float t1 = (-b - sqrt_delta) / (2.0f * a);
+
+			if (t1 >= 0.0f && t1 <= 1.0f) {
+				collides = true;
+				return t1 * std::sqrt(a);
+			} else {
+				collides = false;
+				return std::numeric_limits<float>::infinity();
+			}
+		}
+
+		struct ObjectCollisionResult {
+			Entity* entity;
+			float distance;
+		};
+
+		struct ObjectCollisionResultLess {
+			bool operator()(const ObjectCollisionResult& lhs, const ObjectCollisionResult& rhs) const {
+				return lhs.distance < rhs.distance;
+			}
+		};
+
 		static fvec3 MovementRayCast(fvec3& vector, Sector*& currentSector, fvec3 startingPoint, RayType rayType) {
 			fvec3 endPoint = startingPoint + vector;
+
+			std::set<ObjectCollisionResult, ObjectCollisionResultLess> collisionResults;
+			for (auto& entity : currentSector->entities) {
+				bool isCollision;
+				float distance = check_object_collision(entity->getPosition(), entity->getWidth()+2., startingPoint, vector, isCollision);
+				if (isCollision)
+					collisionResults.emplace(ObjectCollisionResult{entity, distance});
+			}
 
 			// Check all walls in a given sector.
 			for (auto wall : currentSector->GetWalls()) {
@@ -650,6 +714,18 @@ namespace NewModels{
 					}
 				}
 			}
+
+			for (auto& collision : collisionResults) {
+				if (collision.entity->Blocks()) {
+					vector = fvec3(0, 0, 0);
+					return startingPoint + vector.normalized()*(collision.distance-0.05);
+				}
+				if (collision.entity->AllowCollection()) {
+					collision.entity->Collect();
+					currentSector->entities.erase(collision.entity);
+				}
+			}
+
 			vector = fvec3(0, 0, 0);
 			return endPoint;
 		}
@@ -734,6 +810,10 @@ namespace NewModels{
 
     		void Update(double deltaTime) {
 				for (auto& entity : entities) {
+					if (entity->isToRemove()) {
+						delete entity;
+						entities.erase(std::remove(entities.begin(), entities.end(), entity), entities.end());
+					}
 					entity->Update(deltaTime);
 				}
 			}

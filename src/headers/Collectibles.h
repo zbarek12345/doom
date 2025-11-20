@@ -61,7 +61,7 @@ public:
 
 	bool AllowCollection() const override;
 
-	void Collect() const override;
+	void Collect() override;
 };
 
 #define BfugCollectible(pos) WeaponCollectible(pos, CollectibleType::BFUG)
@@ -92,7 +92,7 @@ public:
 
 	bool AllowCollection() const override;
 
-	void Collect() const override;
+	void Collect() override;
 
 };
 
@@ -111,7 +111,7 @@ class BasicHealers : public AnimatedEntity{
 
 	bool AllowCollection() const override;
 
-	void Collect() const override;
+	void Collect() override;
 
 };
 

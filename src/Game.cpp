@@ -120,7 +120,7 @@ void Game::GenerateWeapons() {
         nullptr,
         LoadWeapon(Pistol),
         LoadWeapon(Shotgun),
-        nullptr,
+        LoadWeapon(ChainGun),
         nullptr,
         nullptr,
         nullptr,
@@ -141,6 +141,7 @@ void Game::Run() {
     ///TODO -- xxx
     SDL_SetRelativeMouseMode(SDL_TRUE);
     bool size_changed = true;  // Force initial projection setup
+    bool fire_btn_down = false;
 
     while (running) {
         // printf("start\n");
@@ -157,12 +158,16 @@ void Game::Run() {
                 size_changed = true;
             }
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT)
-                player->TryShoot();
+                fire_btn_down = true;
+            if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_LEFT)
+                fire_btn_down = false;
         }
 
         if (player) {
             player->HandleEvent();
             player->Update(deltaTime);
+            if (fire_btn_down)
+                Player::TryShoot();
         }
 
         if (current_map) current_map->Update(deltaTime);
