@@ -72,10 +72,13 @@ void NewModels::Map::HandleProjectile(Projectile *projectile, float bullet_dista
 	auto psector = projectile->GetSector();
 	auto target_hit = false;
 	dir*=bullet_distance;
-	RayCaster::PerformRayCast(dir, psector, pos, RayCaster::Shot, target_hit);
+	auto ret = RayCaster::PerformRayCast(dir, psector, pos, RayCaster::Shot, target_hit, projectile->GetCaster());
 
 	if (target_hit) {
 		projectiles_to_delete.push_back(projectile);
+	}else{
+		projectile->SetSector(psector);
+		projectile->SetPosition(ret);
 	}
 }
 

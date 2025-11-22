@@ -12,7 +12,7 @@
 bool Player::has_backpack = false;
 int16_t Player::armor = 0;
 int16_t Player::health = 100;
-uint16_t Player::ammo[] = {24, 50, 60, 40};
+uint16_t Player::ammo[] = {500, 50, 60, 40};
 uint16_t Player::max_ammo[] = {200, 100, 100, 600};
 uint8_t Player::current_weapon = 2;
 bool Player::has_weapon[] = {1,0,1,0,1,0,0,0,0};
@@ -22,9 +22,10 @@ std::vector<DoomGunInterface*> Player::weapons={};
 svec3 Player::position = {0,0,0};
 fvec3 Player::pos = {0,0,0};
 fvec3 Player::LookDir = {0,0,0};
+Player* Player::Instance = nullptr;
 
 Player::Player(svec3 position, float angle, NewModels::Map* map) {
-	this->position = position;
+	Player::position = position;
 	pos = (fvec3)position;
 	pos = fvec3(position).xzy();
 	this->camera = new Camera(angle);
@@ -32,6 +33,7 @@ Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	this->new_map = map;
 	this->current_sector = map->getPlayerSector({position.x,position.y},nullptr);
 	this->ray_launched = false;
+	Instance = this;
 }
 
 void Player::HandleEvent() {
@@ -209,4 +211,8 @@ void Player::BindWeapons(std::vector<DoomGunInterface *> weapons) {
 
 fvec3 Player::GetPosition() {
 	return pos;
+}
+
+Player* Player::GetInstance() {
+	return Instance;
 }

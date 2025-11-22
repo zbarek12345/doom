@@ -223,8 +223,6 @@ void Game::Run() {
         deltaTime = (now - lastTime) / 1000.0;
         render_time += deltaTime;
         lastTime = now;
-
-        // printf("Dt:%f\n", deltaTime);
     }
 }
 

@@ -281,7 +281,8 @@ namespace NewModels {
 		    Sector*& currentSector,    // starting sector (may change if portal crossed)
 		    fvec3 origin,              // ray origin point
 		    RayType rayType,           // e.g. RAY_WEAPON, RAY_SIGHT, etc. (you can use for special rules)
-		    bool& target_hit           // output: true if we actually hit a blocking target
+		    bool& target_hit,
+		    void* ignore// output: true if we actually hit a blocking target
 		) {
 		    target_hit = false;
 		    std::set<RayCastResult, RayCastResultLess> hits;
@@ -294,12 +295,12 @@ namespace NewModels {
 		    {
 		        RayCastResult closest;
 		        closest.hit = false;
-		        closest.distance = remainingDist + 1; // something bigger than remaining
+		        closest.distance = remainingDist; // something bigger than remaining
 
 		        // ------------------------------------------------------------------
 		        // 1. Wall / Portal intersections in current sector
 		        // ------------------------------------------------------------------
-		        float wallDist = remainingDist + 1;
+		        float wallDist = remainingDist;
 		        Wall* hitWall = nullptr;
 		        Sector* nextSector = nullptr;
 
@@ -370,8 +371,9 @@ namespace NewModels {
 
 	            float t;
 	            fvec3 hitPoint;
-	            if (RayCylinderIntersection(pos, dir, playerPos, radius, playerEye - 56.0f, playerEye, t, hitPoint))
+	            if (ignore != Player::GetInstance() && RayCylinderIntersection(pos, dir, playerPos, radius, playerEye - 56.0f, playerEye, t, hitPoint))
 	            {
+
 	                if (t < remainingDist)
 	                {
 	                    RayCastResult r{ RayCastResultType::Player, true, t, nullptr};
@@ -395,7 +397,7 @@ namespace NewModels {
 		            bool infiniteHeight = true;
 
 		            float t;
-	                if (RayInfiniteCylinderIntersection(pos, dir, epos, radius, t))
+	                if (ignore != ent && RayInfiniteCylinderIntersection(pos, dir, epos, radius, t))
 	                {
 	                    if (t > 0 && t < remainingDist)
 	                    {
@@ -406,6 +408,10 @@ namespace NewModels {
 	                }
 		        }
 
+		    	if (hits.empty()) {
+		    		pos += remainingDist*dir;
+		    		break;
+		    	}
 		        // ------------------------------------------------------------------
 		        // Now process hits in order of distance
 		        // ------------------------------------------------------------------
@@ -425,7 +431,7 @@ namespace NewModels {
 		                {
 		                    // Cross portal
 		                    currentSector = wall->getOther(currentSector);
-		                    pos = hitPos;
+		                    pos = hitPos + dir * 0.6f;
 		                    break; // restart loop in new sector
 		                }
 		                else

@@ -16,6 +16,8 @@ public:
 
    static double next_weapon_selected_timer;
 
+   static Player *Instance;
+
    Player(svec3 position, float angle, NewModels::Map* map);
    void Update(double deltaTime);
    void HandleEvent(SDL_Event* event, double deltaTime);
@@ -50,6 +52,9 @@ public:
    static bool has_weapon[9];
    static void BindWeapons(std::vector<DoomGunInterface*> Weapons);
    static fvec3 GetPosition();
+
+   static Player *GetInstance();
+
    static fvec3 LookDir;
 private:
    fvec3 movement_vector{};

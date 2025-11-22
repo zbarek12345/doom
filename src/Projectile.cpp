@@ -28,20 +28,26 @@ void Projectile::SetPosition(fvec3 position) {
 	this->position = position;
 }
 
+void * Projectile::GetCaster() const {
+	return caster;
+}
+
 void Projectile::Update(double deltaTime) {
-	//printf("Update projectile\n");
 	NewModels::Map::HandleProjectile(this, speed*deltaTime);
 }
 
 Projectile::Projectile(ProjectileType type, const fvec3 &position, const fvec3 &direction, uint16_t speed,
-	uint16_t min_damage, uint16_t max_damage)
+	uint16_t min_damage, uint16_t max_damage, void* caster)
 {
 	this->position = position;
+	this->position.y -= 5;
 	this->direction = direction.normalized();
+	this->direction.y = - direction.y;
 	this->type = type;
 	this->speed = speed;
 	this->min_damage = min_damage;
 	this->max_damage = max_damage;
+	this->caster = caster;
 	current_sector = NewModels::Map::getPlayerSector({static_cast<short>(position.x), static_cast<short>(position.z)}, nullptr);
 }
 
@@ -49,7 +55,7 @@ ProjectileType Projectile::GetType() const {
 	return type;
 }
 
-BulletProjectile::BulletProjectile(fvec3 position, fvec3 direction):Projectile(ProjectileType::BULLET, position, direction, 10, 5, 15) {}
+BulletProjectile::BulletProjectile(fvec3 position, fvec3 direction, void* caster):Projectile(ProjectileType::BULLET, position, direction, 1200, 5, 15, caster) {}
 
 bool BulletProjectile::HasExplosion(uint16_t &damage, uint16_t &radius) {
 	return Projectile::HasExplosion(damage, radius);
@@ -57,15 +63,15 @@ bool BulletProjectile::HasExplosion(uint16_t &damage, uint16_t &radius) {
 
 void BulletProjectile::Render() {
 	glPushMatrix();
-	glTranslatef(position.x, position.y, position.z);
+	glTranslatef(position.x, position.y, -position.z);
 
-	// Calculate rotation angles based on direction vector
-	float pitch = asin(-direction.y);
-	float yaw = atan2(direction.x, direction.z);
+	auto dir = direction.normalized();
 
-	glRotatef(yaw * 180.0f / M_PI, 0, 1, 0);
-	glRotatef(pitch * 180.0f / M_PI, 1, 0, 0);
+	float pitch = asinf(-dir.y);                     // note the NEGATIVE!
+	float yaw   = atan2f(dir.x, dir.z);
 
+	glRotatef(yaw   * 180/M_PI, 0,1,0);
+	glRotatef(pitch * 180/M_PI, 1,0,0);
 	// Set bright yellow color
 	glColor3f(1.0f, 1.0f, 0.0f);
 
