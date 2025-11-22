@@ -55,7 +55,7 @@ ProjectileType Projectile::GetType() const {
 	return type;
 }
 
-BulletProjectile::BulletProjectile(fvec3 position, fvec3 direction, void* caster):Projectile(ProjectileType::BULLET, position, direction, 1200, 5, 15, caster) {}
+BulletProjectile::BulletProjectile(fvec3 position, fvec3 direction, void* caster):Projectile(ProjectileType::BULLET, position, direction, 900, 5, 15, caster) {}
 
 bool BulletProjectile::HasExplosion(uint16_t &damage, uint16_t &radius) {
 	return Projectile::HasExplosion(damage, radius);
@@ -67,8 +67,8 @@ void BulletProjectile::Render() {
 
 	auto dir = direction.normalized();
 
-	float pitch = asinf(-dir.y);                     // note the NEGATIVE!
-	float yaw   = atan2f(dir.x, dir.z);
+	float pitch = asinf(dir.y);                     // note the NEGATIVE!
+	float yaw   = atan2f(-dir.x, dir.z);
 
 	glRotatef(yaw   * 180/M_PI, 0,1,0);
 	glRotatef(pitch * 180/M_PI, 1,0,0);

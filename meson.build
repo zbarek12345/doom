@@ -2,11 +2,12 @@ project('doom', 'cpp',
         version : '1.0.0',
         default_options : ['warning_level=3', 'cpp_std=c++23'])
 
-regex = dependency('regex')
-gl = dependency('opengl')
-sdl2 = dependency('sdl2')
-sdl2_main = dependency('sdl2')
-glew = dependency('glew')
+libicon = dependency('iconv',static:true)
+regex = dependency('regex', static:true)
+gl = dependency('opengl', static:true)
+sdl2 = dependency('sdl2', static:true)
+sdl2_main = dependency('sdl2', static:true)
+glew = dependency('glew', static:true)
 
 
 cmake = import('cmake')
@@ -27,9 +28,9 @@ doom = executable('doom',
                    'src/CircuitFinder.cpp', 'src/TexBinder.cpp', 'main.cpp',
                    'src/RawLumpKeeper.cpp', 'src/textures/playpal.cpp', 'src/Collectibles.cpp',
                    'src/HudRender.cpp', 'src/Projectile.cpp', 'src/Weapon.cpp', NewModels],
-                  dependencies : [sdl2, sdl2_main, gl, regex, cdt_lib, glew],
+                  dependencies : [libicon, sdl2, sdl2_main, gl, regex, cdt_lib, glew],
                   cpp_args : ['-funroll-loops', '-march=native','-O0'],
-                  link_args : ['-mwindows','-static-libgcc', '-static-libstdc++'],
+                  link_args : ['-mwindows','-static-libgcc', '-static-libstdc++','-static'],
                   install : true)
 
 test('test', doom)

@@ -109,6 +109,7 @@ void HudRender::Render() {
 	RenderArmor();
 	RenderAmmo();
 	RenderGun();
+	RenderCrosshair();
 
 	glPopMatrix();                 // modelview
 	glMatrixMode(GL_PROJECTION);
@@ -356,4 +357,54 @@ void HudRender::RenderGun() {
 
 	glDisable(GL_BLEND);
 	glDisable(GL_TEXTURE_2D);
+}
+
+void HudRender::RenderCrosshair()
+{
+	const float crosshairSize = 16.0f;        // total size in pixels (adjust to taste)
+	const float thickness     = 2.0f;         // thickness of lines
+	const float gap           = 4.0f;         // empty space in the center
+
+	const float halfSize = crosshairSize * 0.5f;
+	const float halfThick = thickness * 0.5f;
+
+	float centerX = w * 0.5f;
+	float centerY = h * 0.5f;
+
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Bright green crosshair (classic FPS style)
+	glColor4f(0.0f, 1.0f, 0.0f, 0.8f);
+
+	glBegin(GL_QUADS);
+
+	// Horizontal line
+	glVertex2f(centerX - halfSize,           centerY - halfThick);
+	glVertex2f(centerX - gap,                centerY - halfThick);
+	glVertex2f(centerX - gap,                centerY + halfThick);
+	glVertex2f(centerX - halfSize,           centerY + halfThick);
+
+	glVertex2f(centerX + gap,                centerY - halfThick);
+	glVertex2f(centerX + halfSize,           centerY - halfThick);
+	glVertex2f(centerX + halfSize,           centerY + halfThick);
+	glVertex2f(centerX + gap,                centerY + halfThick);
+
+	// Vertical line
+	glVertex2f(centerX - halfThick,          centerY - halfSize);
+	glVertex2f(centerX + halfThick,          centerY - halfSize);
+	glVertex2f(centerX + halfThick,          centerY - gap);
+	glVertex2f(centerX - halfThick,          centerY - gap);
+
+	glVertex2f(centerX - halfThick,          centerY + gap);
+	glVertex2f(centerX + halfThick,          centerY + gap);
+	glVertex2f(centerX + halfThick,          centerY + halfSize);
+	glVertex2f(centerX - halfThick,          centerY + halfSize);
+
+	glEnd();
+
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  // reset color
+	glDisable(GL_BLEND);
+	glEnable(GL_TEXTURE_2D);  // restore default state if needed
 }
