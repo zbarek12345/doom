@@ -11,6 +11,7 @@
 
 namespace NewModels {
 	 class Map{
+	 		static std::vector<Projectile*> projectiles_to_delete;
 		public:
 			static std::vector<Sector> sectors;
     		static std::vector<Wall*> walls;
@@ -25,11 +26,11 @@ namespace NewModels {
 
 			void Render();
 
-			void Update(double deltaTime);
+		    static void Update(double deltaTime);
 
 			Sector* getPlayerSector(svec2 pos, Sector* previousSector);
 
-			static void HandleProjectile(Projectile* projectile);
+			static void HandleProjectile(Projectile* projectile,float bullet_distance);
 
 			void HandleMovement(fvec3& move, fvec3& player_pos, Sector*& currentSector);
 

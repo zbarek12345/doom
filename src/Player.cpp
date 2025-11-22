@@ -21,6 +21,7 @@ double Player::next_weapon_selected_timer = 0;
 std::vector<DoomGunInterface*> Player::weapons={};
 svec3 Player::position = {0,0,0};
 fvec3 Player::pos = {0,0,0};
+fvec3 Player::LookDir = {0,0,0};
 
 Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	this->position = position;
@@ -100,6 +101,8 @@ void Player::Update(double deltaTime) {
 		new_map->TryActivateRay(cam_vec, current_sector, pos);
 	}
 	weapons[current_weapon]->Update(deltaTime);
+
+	LookDir = camera->get3DVector();
 }
 
 void Player::Render() {
@@ -192,11 +195,10 @@ void Player::TryShoot() {
 	if (weapons[current_weapon]!=nullptr) {
 		auto at = GetCurrentAmmoType();
 		if (at == 4)
-			return;
-		if (Player::ammo[at] > 0)
+			weapons[current_weapon]->TryShot();
+		else if (Player::ammo[at] > 0)
 			ammo[at]-=weapons[current_weapon]->TryShot();
 	}
-
 }
 
 void Player::BindWeapons(std::vector<DoomGunInterface *> weapons) {

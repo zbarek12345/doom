@@ -339,6 +339,14 @@ namespace NewModels {
 			return !res;
 		}
 
+		bool AllowBulletThrough(const Sector* start, uint16_t height) const {
+			if (other_sector == nullptr || flags_.Impassible)
+				return false;
+			return true;
+			const auto t_sec = start == this_sector ? this_sector : other_sector;
+			const auto o_sec = start == this_sector ? other_sector : this_sector;
+		}
+
 		Sector* getOther(Sector* current) const {
 			return other_sector == current ? this_sector : other_sector;
 		}

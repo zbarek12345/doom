@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <iostream>
 
+#include "Sector.h"
 #include "vec3.h"
 
 enum class ProjectileType {
@@ -24,13 +25,10 @@ public:
 	virtual ~Projectile() = default;
 
 	Projectile(ProjectileType type, const fvec3& position, const fvec3& direction,
-						uint16_t speed, uint16_t min_damage, uint16_t max_damage) {
-		this->position = position;
-		this->direction = direction;
-		this->type = type;
-	}
+						uint16_t speed, uint16_t min_damage, uint16_t max_damage);
 
-private:
+protected:
+	NewModels::Sector* current_sector = nullptr;
 	ProjectileType type;
 	uint16_t speed = 0;
 	uint16_t min_damage=0;
@@ -38,19 +36,25 @@ private:
 
 	fvec3 direction;
 	fvec3 position;
-
+public:
 	ProjectileType GetType() const;
 	uint16_t GetDamage() const;
+	NewModels::Sector* GetSector() const;
+	bool GetDetails(fvec3 &direction, fvec3 &position) const;
+	void SetSector(NewModels::Sector* sector);
+	void SetPosition(fvec3 position);
+
+	void Update(double deltaTime);
+
 	virtual bool HasExplosion(uint16_t& damage, uint16_t& radius);
-	virtual void Update(double deltaTime);
-	virtual void Render();
+	virtual void Render() = 0 ;
 };
 
 class BulletProjectile : public Projectile {
-	BulletProjectile(fvec3 position, fvec3 direction):Projectile(ProjectileType::BULLET, position, direction, 600, 5, 15){}
+public:
+	BulletProjectile(fvec3 position, fvec3 direction);
 
 	bool HasExplosion(uint16_t &damage, uint16_t &radius) override;
-	void Update(double deltaTime) override;
 	void Render() override;
 };
 

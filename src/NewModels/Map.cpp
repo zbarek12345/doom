@@ -6,6 +6,7 @@
 #include "src/headers/Player.h"
 #include "src/headers/RayCaster.h"
 
+std::vector<Projectile*> NewModels::Map::projectiles_to_delete = {};
 std::vector<NewModels::Sector> NewModels::Map::sectors = {};
 std::vector<NewModels::Wall*> NewModels::Map::walls = {};
 //std::vector<Entity*> entities;
@@ -20,7 +21,7 @@ NewModels::Map::Map() {
 }
 
 void NewModels::Map::Render() {
-
+	glEnable(GL_TEXTURE_2D);
 	for (const auto& wall : walls) {
 		wall->Render();
 	}
@@ -29,10 +30,22 @@ void NewModels::Map::Render() {
 		sector.Render();
 	}
 
+	for (auto& projectile : projectiles) {
+		projectile->Render();
+	}
+	glDisable(GL_TEXTURE_2D);
 }
 
 void NewModels::Map::Update(double deltaTime) {
-	//TODO - Projectiles and monsters;
+	for (auto& projectile : projectiles) {
+		projectile->Update(deltaTime);
+	}
+
+	for (auto& projectile : projectiles_to_delete) {
+		projectiles.erase(projectile);
+		delete projectile;
+	}
+	projectiles_to_delete.clear();
 }
 
 NewModels::Sector * NewModels::Map::getPlayerSector(svec2 pos, Sector *previousSector) {
@@ -51,6 +64,19 @@ NewModels::Sector * NewModels::Map::getPlayerSector(svec2 pos, Sector *previousS
 		if (sec->isInSector(fvec3(pos.x, pos.y,0.)))
 			return sec;
 	goto getSector;
+}
+
+void NewModels::Map::HandleProjectile(Projectile *projectile, float bullet_distance) {
+	fvec3 pos, dir;
+	projectile->GetDetails(pos, dir);
+	auto psector = projectile->GetSector();
+	auto target_hit = false;
+	dir*=bullet_distance;
+	RayCaster::PerformRayCast(dir, psector, pos, RayCaster::Shot, target_hit);
+
+	if (target_hit) {
+		projectiles_to_delete.push_back(projectile);
+	}
 }
 
 void NewModels::Map::HandleMovement(fvec3 &move, fvec3 &player_pos, Sector *&currentSector) {

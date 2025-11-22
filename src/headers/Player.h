@@ -50,6 +50,7 @@ public:
    static bool has_weapon[9];
    static void BindWeapons(std::vector<DoomGunInterface*> Weapons);
    static fvec3 GetPosition();
+   static fvec3 LookDir;
 private:
    fvec3 movement_vector{};
    NewModels::Map* new_map;

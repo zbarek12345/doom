@@ -57,10 +57,14 @@ void NewModels::Sector::Render() {
 	}
 	have_print = true;
 	glEnd();
+	glCullFace(GL_FRONT);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	auto player_pos3 = Player::GetPosition();
 	fvec2 playerpos = {player_pos3.x, player_pos3.z};
 	for (auto& entity: entities)
 		entity->Render(playerpos);
+	glDisable(GL_BLEND);
 	glDisable(GL_CULL_FACE);
 }
 

@@ -6,6 +6,7 @@
 #define DOOM_RAYCASTER_H
 #include "Entity.h"
 #include "new_models.h"
+#include "Player.h"
 #include "Wall.h"
 
 namespace NewModels {
@@ -196,45 +197,285 @@ namespace NewModels {
 			return endPoint;
 		}
 
-		static fvec3 PerformRayCast(fvec3& vector, Sector*& currentSector, fvec3 startingPoint, RayType rayType, bool& target_hit) {
-			fvec3 normalizedVector = vector.normalized();
-			float vectorLength = vector.length();
-			auto intersectionDist = SHRT_MAX;
-			Wall* intersectionWall = nullptr;
-			for (auto& wall : currentSector->GetWalls()) {
-				auto dist = PlaneIntersectionDistance(wall, normalizedVector, startingPoint, vectorLength);
-				if (dist < intersectionDist) {
-					intersectionDist = dist;
-					intersectionWall = wall;
-				}
+		static bool RayInfiniteCylinderIntersection(fvec3 origin, fvec3 dir, fvec3 cylCenter, float radius, float& t)
+		{
+			fvec2 o = fvec2(origin.x, origin.z);
+			fvec2 d = fvec2(dir.x,   dir.z).normalized();
+			fvec2 c = fvec2(cylCenter.x, cylCenter.z);
+
+			float a = d.dot(d);
+			float b = 2 * o.dot(d) - 2 * c.dot(d);
+			float c_val = o.dot(o) + c.dot(c) - 2 * o.dot(c) - radius*radius;
+
+			float discriminant = b*b - 4*a*c_val;
+			if (discriminant < 0) return false;
+
+			float sqrtD = std::sqrt(discriminant);
+			float t1 = (-b - sqrtD) / (2*a);
+			float t2 = (-b + sqrtD) / (2*a);
+
+			t = (t1 > 0) ? t1 : t2;
+			return (t > 0);
+		}
+
+		// Finite height cylinder
+		static bool RayCylinderIntersection(fvec3 ro, fvec3 rd, fvec3 center, float r,
+									 float bottom, float top, float& tOut, fvec3& hitPos)
+		{
+			fvec2 o = fvec2(ro.x, ro.z);
+			fvec2 d = fvec2(rd.x, rd.z);
+			float len = d.length();
+			if (len < 1e-6) return false;
+			d /= len;
+
+			fvec2 c = fvec2(center.x, center.z);
+
+			float a = d.dot(d);
+			float b = 2 * (o.dot(d) - c.dot(d));
+			float c_val = o.dot(o) + c.dot(c) - 2*o.dot(c) - r*r;
+
+			float disc = b*b - 4*a*c_val;
+			if (disc < 0) return false;
+
+			float sqrtDisc = std::sqrt(disc);
+			float t1 = (-b - sqrtDisc) / (2*a);
+			float t2 = (-b + sqrtDisc) / (2*a);
+
+			float t = (t1 > 0.001f) ? t1 : t2;
+			if (t < 0.001f) return false;
+
+			fvec3 p = ro + rd * (t * len); // because we normalized horizontal part only
+			if (p.y >= bottom && p.y <= top)
+			{
+				tOut = t * len;
+				hitPos = p;
+				return true;
 			}
+			return false;
+		}
 
-			auto floorCeilIntersection = std::max(
-				CalculateVectorCeilDist(normalizedVector,currentSector, startingPoint),
-				CalculateVectorFloorDist(normalizedVector, currentSector, startingPoint)
-				);
 
-			if (intersectionDist > vectorLength && floorCeilIntersection > vectorLength) {
-				auto restVector = fvec3(0,0,0);
-				vector = restVector;
-				target_hit = false;
-				return (fvec3)startingPoint + fvec3(round(vector.x), round(vector.y), round(vector.z));
+		enum class RayCastResultType{
+			Wall,
+			Flat,
+			Entity,
+			Player,
+			Monster
+		};
+
+		struct RayCastResult {
+			RayCastResultType type;
+			bool hit;
+			double distance;
+			void* target;
+		};
+
+		struct RayCastResultLess {
+			bool operator()(const RayCastResult& lhs, const RayCastResult& rhs) const {
+				return lhs.distance < rhs.distance;
 			}
+		};
 
-			if (floorCeilIntersection < intersectionDist) {
-				auto distVector = normalizedVector * floorCeilIntersection;
-				target_hit = true;
-				vector =  distVector;
-				return (fvec3)startingPoint + fvec3(round(distVector.x), round(distVector.y), round(distVector.z));
-			}
+		static fvec3 PerformRayCast(
+		    fvec3 direction,           // input direction vector (not necessarily normalized)
+		    Sector*& currentSector,    // starting sector (may change if portal crossed)
+		    fvec3 origin,              // ray origin point
+		    RayType rayType,           // e.g. RAY_WEAPON, RAY_SIGHT, etc. (you can use for special rules)
+		    bool& target_hit           // output: true if we actually hit a blocking target
+		) {
+		    target_hit = false;
+		    std::set<RayCastResult, RayCastResultLess> hits;
 
-			auto distVector = normalizedVector * intersectionDist;
-			auto restVector = normalizedVector * (vectorLength - intersectionDist);
-			target_hit = false;
-			vector = restVector;
-			return (fvec3)startingPoint + distVector;
+		    fvec3 dir = direction.normalized();
+		    float remainingDist = direction.length();
+		    fvec3 pos = origin;
 
-			return {0,0,0};
+		    while (remainingDist > 0.01f) // prevent infinite loops and floating-point creep
+		    {
+		        RayCastResult closest;
+		        closest.hit = false;
+		        closest.distance = remainingDist + 1; // something bigger than remaining
+
+		        // ------------------------------------------------------------------
+		        // 1. Wall / Portal intersections in current sector
+		        // ------------------------------------------------------------------
+		        float wallDist = remainingDist + 1;
+		        Wall* hitWall = nullptr;
+		        Sector* nextSector = nullptr;
+
+		        for (Wall* wall : currentSector->GetWalls())
+		        {
+		            // Skip backfaces or non-solid walls depending on rayType if needed
+		            //if (!wall->IsSolid() && !wall->portal) continue;
+
+		            float dist = PlaneIntersectionDistance(wall, dir, pos, remainingDist);
+		            if (dist >= 0 && dist < wallDist)
+		            {
+		                wallDist = dist;
+		                hitWall = wall;
+		                if (wall->AllowBulletThrough(currentSector, 0))
+		                    nextSector = wall->getOther(currentSector);
+		                else
+		                    nextSector = nullptr;
+		            }
+		        }
+
+		        if (hitWall)
+		        {
+		            RayCastResult r;
+		        	r.type = RayCastResultType::Wall;
+		            r.hit = true;
+		            r.distance = wallDist;
+		            r.target = hitWall;
+		            hits.insert(r);
+		        }
+
+		        // ------------------------------------------------------------------
+		        // 2. Floor and Ceiling (optional, only if ray can hit them)
+		        // ------------------------------------------------------------------
+		            // Floor
+	            float floorY = currentSector->floor_height;
+	            if (dir.y < 0) // looking down
+	            {
+	                float t = (floorY - pos.y) / dir.y;
+	                if (t > 0 && t < remainingDist)
+	                {
+	                    RayCastResult r{ RayCastResultType::Flat, true, t, nullptr };
+	                    hits.insert(r);
+	                    if (t < closest.distance) closest = r;
+	                }
+	            }
+
+	            // Ceiling
+	            float ceilY = currentSector->ceil_height;
+	            if (dir.y > 0) // looking up
+	            {
+	                float t = (ceilY - pos.y) / dir.y;
+	                if (t > 0 && t < remainingDist)
+	                {
+	                    RayCastResult r{ RayCastResultType::Flat, true, t, nullptr };
+	                    hits.insert(r);
+	                    if (t < closest.distance) closest = r;
+	                }
+	            }
+
+		        // ------------------------------------------------------------------
+		        // 3. Player (special case – finite height cylinder)
+		        // ------------------------------------------------------------------
+	            fvec3 playerPos = Player::GetPosition();
+	            float playerHeight = currentSector->floor_height + 56.0f;
+	            float playerEye = playerPos.y; // assuming pos.y is eye height already? adjust if needed
+
+	            float radius = 16.;
+
+	            float t;
+	            fvec3 hitPoint;
+	            if (RayCylinderIntersection(pos, dir, playerPos, radius, playerEye - 56.0f, playerEye, t, hitPoint))
+	            {
+	                if (t < remainingDist)
+	                {
+	                    RayCastResult r{ RayCastResultType::Player, true, t, nullptr};
+	                    hits.insert(r);
+	                    if (t < closest.distance) closest = r;
+	                }
+	            }
+
+		        // ------------------------------------------------------------------
+		        // 4. Entities in current sector (cylinders)
+		        // ------------------------------------------------------------------
+		        for (Entity* ent : currentSector->entities) // assume sector has entity list
+		        {
+		           // if (!ent || !ent->active) continue;
+
+		            svec2 epos2 = ent->getPosition();
+		            fvec3 epos(epos2.x, 0, epos2.y); // assuming height center
+		            float radius = ent->getWidth();
+
+		            // Infinite height version (classic Doom things)
+		            bool infiniteHeight = true;
+
+		            float t;
+	                if (RayInfiniteCylinderIntersection(pos, dir, epos, radius, t))
+	                {
+	                    if (t > 0 && t < remainingDist)
+	                    {
+	                        RayCastResult r{ RayCastResultType::Entity, true, t, ent };
+	                        hits.insert(r);
+	                        if (t < closest.distance) closest = r;
+	                    }
+	                }
+		        }
+
+		        // ------------------------------------------------------------------
+		        // Now process hits in order of distance
+		        // ------------------------------------------------------------------
+		        for (const auto& hit : hits)
+		        {
+		            if (!hit.hit) continue;
+
+		            // Advance ray to just before this hit
+		            fvec3 hitPos = pos + dir * (hit.distance - 0.001f);
+		            remainingDist -= hit.distance;
+
+		            // Wall hit
+		            if (hit.type == RayCastResultType::Wall)
+		            {
+		            	auto* wall = static_cast<Wall*>(hit.target);
+		                if (wall->AllowBulletThrough(currentSector,0) && remainingDist > 0.01f)
+		                {
+		                    // Cross portal
+		                    currentSector = wall->getOther(currentSector);
+		                    pos = hitPos;
+		                    break; // restart loop in new sector
+		                }
+		                else
+		                {
+		                    // Solid wall → definitive blocking hit
+		                    target_hit = true;
+		                    return pos + dir * hit.distance; // exact hit point
+		                }
+		            }
+		            // Player hit
+		            if (hit.type == RayCastResultType::Player)
+		            {
+		            	//Player.Eat(Projectile);
+		                target_hit = true;
+		                return pos + dir * hit.distance;
+		            }
+		            // Entity hit
+		        	if (hit.type == RayCastResultType::Entity)
+		            {
+		            	Entity* ent = static_cast<Entity*>(hit.target);
+		                if (ent->Blocks()) // or flags & MF_SOLID, etc.
+		                {
+		                    target_hit = true;
+		                    return pos + dir * hit.distance;
+		                }
+		                else
+		                {
+		                    // Non-blocking → continue past it
+		                    pos = hitPos;
+		                	continue;
+		                }
+		            }
+		            // Floor/ceiling hit (no target pointer)
+		            if (hit.type == RayCastResultType::Flat)
+		            {
+		                target_hit = true;
+		                return pos + dir * hit.distance;
+		            }
+		        }
+
+		        // If no blocking hit was found in this sector and no portal crossed
+		        if (hits.empty() || closest.distance > remainingDist)
+		        {
+		            // Ray goes into void
+		            return pos + dir * remainingDist;
+		        }
+		    }
+
+		    // Ray exhausted
+		    return pos;
 		}
 	};
 
