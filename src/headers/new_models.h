@@ -9,13 +9,7 @@
 #include <algorithm>
 #include <CDTUtils.h>
 #include <climits>
-#include <cstring>
 #include <set>
-
-#include "Entity.h"
-#include "new_models.h"
-#include "Projectile.h"
-#include "TexBinder.h"
 #include "vec2.h"
 #include "vec3.h"
 

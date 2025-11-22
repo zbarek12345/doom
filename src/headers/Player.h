@@ -5,7 +5,7 @@
 #include <SDL_opengl.h>
 #include "Camera.h"
 #include "original_map.h"
-#include "new_models.h"
+#include "Map.h"
 #include "Weapon.h"
 
 class Player {
@@ -49,11 +49,12 @@ public:
    static uint16_t max_ammo[4];
    static bool has_weapon[9];
    static void BindWeapons(std::vector<DoomGunInterface*> Weapons);
+   static fvec3 GetPosition();
 private:
    fvec3 movement_vector{};
    NewModels::Map* new_map;
-   svec3 position{}; // Short for map compatibility
-   fvec3 pos;// Float for smooth movement
+   static svec3 position; // Short for map compatibility
+   static fvec3 pos;// Float for smooth movement
    Camera* camera;
    original_map * map;
    NewModels::Sector * current_sector;

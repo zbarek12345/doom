@@ -4,7 +4,9 @@
 
 #ifndef DOOM_RAYCASTER_H
 #define DOOM_RAYCASTER_H
+#include "Entity.h"
 #include "new_models.h"
+#include "Wall.h"
 
 namespace NewModels {
 	class RayCaster{

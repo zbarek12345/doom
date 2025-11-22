@@ -19,9 +19,12 @@ bool Player::has_weapon[] = {1,0,1,0,1,0,0,0,0};
 bool Player::next_weapon_selected = false;
 double Player::next_weapon_selected_timer = 0;
 std::vector<DoomGunInterface*> Player::weapons={};
+svec3 Player::position = {0,0,0};
+fvec3 Player::pos = {0,0,0};
 
 Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	this->position = position;
+	pos = (fvec3)position;
 	pos = fvec3(position).xzy();
 	this->camera = new Camera(angle);
 
@@ -200,4 +203,8 @@ void Player::BindWeapons(std::vector<DoomGunInterface *> weapons) {
 	assert(weapons.size() == NUM_WEAPONS);
 	Player::weapons = weapons;
 	weapons[current_weapon]->Select();
+}
+
+fvec3 Player::GetPosition() {
+	return pos;
 }

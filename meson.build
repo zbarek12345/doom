@@ -17,13 +17,16 @@ cdt = cmake.subproject('CDT')
 
 cdt_lib = cdt.dependency('CDT')
 
+NewModels = ['src/NewModels/Map.cpp', 'src/NewModels/RayCaster.cpp','src/NewModels/Sector.cpp','src/NewModels/Wall.cpp']
+
+
 doom = executable('doom',
-                  ['src/headers/vec2.h','src/parser.cpp','src/OriginalTextureRenderer.cpp',
+                  ['src/parser.cpp','src/OriginalTextureRenderer.cpp',
                    'src/Entity.cpp','src/AnimatedEntity.cpp', 'src/headers/stb_image.h',
                    'src/Game.cpp', 'src/Camera.cpp', 'src/Player.cpp',
                    'src/CircuitFinder.cpp', 'src/TexBinder.cpp', 'main.cpp',
                    'src/RawLumpKeeper.cpp', 'src/textures/playpal.cpp', 'src/Collectibles.cpp',
-                   'src/HudRender.cpp'],
+                   'src/HudRender.cpp', NewModels],
                   dependencies : [sdl2, sdl2_main, gl, regex, cdt_lib, glew],
                   cpp_args : ['-funroll-loops', '-march=native','-O3'],
                   link_args : ['-mwindows','-static-libgcc', '-static-libstdc++'],

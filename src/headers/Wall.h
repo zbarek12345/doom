@@ -6,6 +6,7 @@
 #define DOOM_WALL_H
 #include "Sector.h"
 #include "texture.h"
+#include <cstring>
 
 namespace NewModels {
 	class Wall{

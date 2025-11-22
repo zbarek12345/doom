@@ -4,7 +4,9 @@
 
 #ifndef DOOM_MAP_H
 #define DOOM_MAP_H
+#include "Projectile.h"
 #include "Sector.h"
+#include "TexBinder.h"
 #include "Wall.h"
 
 namespace NewModels {
@@ -15,9 +17,9 @@ namespace NewModels {
     		//std::vector<Entity*> entities;
     		static std::set<ActionPerformer*> actions;
     		static std::set<Projectile*> projectiles;
-			svec3 player_start = {0,0,0};
-			uint16_t player_start_angle;
-			TexBinder* texture_binder;
+			static svec3 player_start;
+			static uint16_t player_start_angle;
+			static TexBinder* texture_binder;
 
 			Map();
 

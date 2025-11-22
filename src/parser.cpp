@@ -14,7 +14,7 @@
 #include <unordered_set>
 #include <CDT.h>
 #include <climits>
-
+#include <regex.h>
 #include "headers/AnimatedEntity.h"
 #include "headers/Collectibles.h"
 #include "headers/playpal.h"

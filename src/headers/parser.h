@@ -4,11 +4,8 @@
 
 #ifndef PARSER_H
 #define PARSER_H
-#include "new_models.h"
-#include <cstdint>
+#include "Map.h"
 #include <vector>
-#include <regex.h>
-#include <cstdio>
 #include <string>
 #include <wchar.h>
 #include "game_content.h"

@@ -3,6 +3,18 @@
 //
 #include "../headers/Map.h"
 
+#include "src/headers/Player.h"
+#include "src/headers/RayCaster.h"
+
+std::vector<NewModels::Sector> NewModels::Map::sectors = {};
+std::vector<NewModels::Wall*> NewModels::Map::walls = {};
+//std::vector<Entity*> entities;
+std::set<NewModels::ActionPerformer*> NewModels::Map::actions = {};
+std::set<Projectile*> NewModels::Map::projectiles = {};
+svec3 NewModels::Map::player_start = {0,0,0};
+uint16_t NewModels::Map::player_start_angle = 0;
+TexBinder* NewModels::Map::texture_binder = nullptr;
+
 NewModels::Map::Map() {
 	texture_binder = new TexBinder();
 }
@@ -14,7 +26,7 @@ void NewModels::Map::Render() {
 	}
 
 	for (auto& sector : sectors) {
-		sector.Render(last_player_pos);
+		sector.Render();
 	}
 
 }
