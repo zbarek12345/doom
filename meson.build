@@ -28,7 +28,7 @@ doom = executable('doom',
                    'src/RawLumpKeeper.cpp', 'src/textures/playpal.cpp', 'src/Collectibles.cpp',
                    'src/HudRender.cpp', 'src/Projectile.cpp', 'src/Weapon.cpp', NewModels],
                   dependencies : [sdl2, sdl2_main, gl, regex, cdt_lib, glew],
-                  cpp_args : ['-funroll-loops', '-march=native','-O3'],
+                  cpp_args : ['-funroll-loops', '-march=native','-O0'],
                   link_args : ['-mwindows','-static-libgcc', '-static-libstdc++'],
                   install : true)
 

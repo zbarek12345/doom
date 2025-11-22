@@ -90,8 +90,8 @@ bool DoomGunInterface::TryShot() {
 			currentFlashFrame = 0;
 			flashTimer = 0.;
 		}
-
-		NewModels::Map::projectiles.emplace(new BulletProjectile(Player::GetPosition(), Player::LookDir));
+		fvec3 start_bullet = Player::GetPosition() + Player::LookDir * 16.2;
+		NewModels::Map::projectiles.emplace(new BulletProjectile(start_bullet, Player::LookDir));
 		printf("Projectile Created");
 
 		return true;

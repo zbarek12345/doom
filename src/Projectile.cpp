@@ -29,7 +29,7 @@ void Projectile::SetPosition(fvec3 position) {
 }
 
 void Projectile::Update(double deltaTime) {
-	printf("Update projectile\n");
+	//printf("Update projectile\n");
 	NewModels::Map::HandleProjectile(this, speed*deltaTime);
 }
 
@@ -39,6 +39,10 @@ Projectile::Projectile(ProjectileType type, const fvec3 &position, const fvec3 &
 	this->position = position;
 	this->direction = direction.normalized();
 	this->type = type;
+	this->speed = speed;
+	this->min_damage = min_damage;
+	this->max_damage = max_damage;
+	current_sector = NewModels::Map::getPlayerSector({static_cast<short>(position.x), static_cast<short>(position.z)}, nullptr);
 }
 
 ProjectileType Projectile::GetType() const {
@@ -68,10 +72,10 @@ void BulletProjectile::Render() {
 	// Draw elongated cube
 	glBegin(GL_QUADS);
 	// Front face
-	glVertex3f(-0.5f, -0.5f, 0.0f);
-	glVertex3f(0.5f, -0.5f, 0.0f);
-	glVertex3f(0.5f, 0.5f, 0.0f);
-	glVertex3f(-0.5f, 0.5f, 0.0f);
+	glVertex3f(-5.f, -5.f, 0.0f);
+	glVertex3f(5.f, -5.f, 0.0f);
+	glVertex3f(5.f, 5.f, 0.0f);
+	glVertex3f(-5.f, 5.f, 0.0f);
 
 	// Back face
 	glVertex3f(-0.5f, -0.5f, 10.0f);

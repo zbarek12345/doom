@@ -28,7 +28,7 @@ namespace NewModels {
 
 		    static void Update(double deltaTime);
 
-			Sector* getPlayerSector(svec2 pos, Sector* previousSector);
+			static Sector* getPlayerSector(svec2 pos, Sector* previousSector);
 
 			static void HandleProjectile(Projectile* projectile,float bullet_distance);
 

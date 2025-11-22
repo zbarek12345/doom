@@ -68,7 +68,7 @@ NewModels::Sector * NewModels::Map::getPlayerSector(svec2 pos, Sector *previousS
 
 void NewModels::Map::HandleProjectile(Projectile *projectile, float bullet_distance) {
 	fvec3 pos, dir;
-	projectile->GetDetails(pos, dir);
+	projectile->GetDetails(dir, pos);
 	auto psector = projectile->GetSector();
 	auto target_hit = false;
 	dir*=bullet_distance;
