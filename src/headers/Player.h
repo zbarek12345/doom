@@ -4,7 +4,7 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include "Camera.h"
-#include "map.h"
+#include "original_map.h"
 #include "new_models.h"
 #include "Weapon.h"
 

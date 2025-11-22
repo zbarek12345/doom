@@ -17,9 +17,6 @@ cdt = cmake.subproject('CDT')
 
 cdt_lib = cdt.dependency('CDT')
 
-bgfx = cmake.subproject('bgfx.cmake')
-bgfx_dep = bgfx.dependency('bgfx')
-
 doom = executable('doom',
                   ['src/headers/vec2.h','src/parser.cpp','src/OriginalTextureRenderer.cpp',
                    'src/Entity.cpp','src/AnimatedEntity.cpp', 'src/headers/stb_image.h',
@@ -27,8 +24,9 @@ doom = executable('doom',
                    'src/CircuitFinder.cpp', 'src/TexBinder.cpp', 'main.cpp',
                    'src/RawLumpKeeper.cpp', 'src/textures/playpal.cpp', 'src/Collectibles.cpp',
                    'src/HudRender.cpp'],
-                  dependencies : [bgfx_dep, sdl2, sdl2_main, gl, regex, cdt_lib, glew],
-                  link_args : ['-mwindows'],
+                  dependencies : [sdl2, sdl2_main, gl, regex, cdt_lib, glew],
+                  cpp_args : ['-funroll-loops', '-march=native','-O3'],
+                  link_args : ['-mwindows','-static-libgcc', '-static-libstdc++'],
                   install : true)
 
 test('test', doom)

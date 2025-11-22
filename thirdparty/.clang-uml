@@ -1,0 +1,23 @@
+compilation_database_dir: ../buildDir         # <-- tu jest compile_commands.json
+output_directory: uml
+
+add_compile_flags:
+  - '-I C:\msys64\mingw64\include'
+
+diagrams:
+  all_classes:
+    type: class
+    glob:
+      - ../src/*.cpp
+      - ../src/headers/*.h
+    include:
+      namespaces:
+        - new_models   # jeśli używasz namespace, wpisz go tu (np. doom, engine)                  # pusty = global namespace
+    using_namespace: new_models  # opcjonalnie
+
+  inheritance:
+    type: package
+    glob:
+      - ../src/headers/*.h
+    include:
+      relationships: [inheritance]

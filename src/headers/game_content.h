@@ -1,7 +1,7 @@
 //
 // Created by Wiktor on 02.10.2025.
 //
-#include "map.h"
+#include "original_map.h"
 #include "OriginalTextureRenderer.h"
 #ifndef GAME_CONTENT_H
 #define GAME_CONTENT_H

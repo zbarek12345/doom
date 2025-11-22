@@ -421,8 +421,6 @@ NewModels::Map *Parser::generateMap(int id) {
 				}
 
 				entity->SetLimits(svec2(sec->floor_height, sec->ceil_height));
-
-				map->entities.push_back(entity);
 				sec->entities.emplace(entity);
 			}
 		}

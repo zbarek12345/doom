@@ -21,15 +21,17 @@ enum class ProjectileType {
 
 class Projectile {
 public:
-	Projectile(ProjectileType type, const fvec3& position, const fvec3& direction) {
-		// In a real engine, this would initialize velocity, collision, etc.
-		// For demo, just print
-		std::cout << "Spawned projectile of type " << static_cast<int>(type)
-				  << " at (" << position.x << ", " << position.y << ", " << position.z << ")"
-				  << " direction (" << direction.x << ", " << direction.y << ", " << direction.z << ")\n";
+	virtual ~Projectile() = default;
+
+	Projectile(ProjectileType type, const fvec3& position, const fvec3& direction,
+						uint16_t speed, uint16_t min_damage, uint16_t max_damage) {
+		this->position = position;
+		this->direction = direction;
+		this->type = type;
 	}
 
 private:
+	ProjectileType type;
 	uint16_t speed = 0;
 	uint16_t min_damage=0;
 	uint16_t max_damage=0;
@@ -37,10 +39,19 @@ private:
 	fvec3 direction;
 	fvec3 position;
 
-	void ApplyDamage();
-
+	ProjectileType GetType() const;
+	uint16_t GetDamage() const;
+	virtual bool HasExplosion(uint16_t& damage, uint16_t& radius);
 	virtual void Update(double deltaTime);
 	virtual void Render();
+};
+
+class BulletProjectile : public Projectile {
+	BulletProjectile(fvec3 position, fvec3 direction):Projectile(ProjectileType::BULLET, position, direction, 600, 5, 15){}
+
+	bool HasExplosion(uint16_t &damage, uint16_t &radius) override;
+	void Update(double deltaTime) override;
+	void Render() override;
 };
 
 #endif //DOOM_PROJECTILE_H

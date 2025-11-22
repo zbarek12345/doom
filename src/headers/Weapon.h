@@ -7,7 +7,8 @@
 #include <random>
 #define M_PI 3.14159265358979323846
 #include "Projectile.h"
-#include "bgfx/bgfx.h"
+#include "texture.h"
+#include "vec2.h"
 
 enum class WeaponType {
     FIST,
@@ -64,7 +65,7 @@ private:
     double frameTimer = 0.;
     size_t currentFrame = 0;
 public:
-    DoomGunInterface(){}
+    DoomGunInterface() = default;
 
     void SetDelay(double delay) {
         pickupDelay = delay;
@@ -109,7 +110,7 @@ public:
             }
 
             flashTimer += deltaTime;
-            if (flash.size()>0) {
+            if (!flash.empty()) {
                 if (currentFlashFrame != -1 && flashTimer > flash[currentFlashFrame].time) {
                     currentFlashFrame++;
                     flashTimer = 0.;
