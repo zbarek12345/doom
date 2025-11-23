@@ -7,6 +7,7 @@
 #include "Entity.h"
 #include "new_models.h"
 #include "Player.h"
+#include "SpecialBinder.h"
 #include "Wall.h"
 
 namespace NewModels {
@@ -179,6 +180,7 @@ namespace NewModels {
 						vector = fvec3(0, 0, 0);
 						return {startingPoint.x, startingPoint.y,startingPoint.z};
 					}
+					SpecialBinder::CreateSpecial(wall, ActivationType::Walkover);
 				}
 			}
 

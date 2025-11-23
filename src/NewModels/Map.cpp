@@ -52,13 +52,18 @@ void NewModels::Map::Update(double deltaTime) {
 	}
 	projectiles_to_delete.clear();
 
+	std::vector<ActionPerformStruct> to_delete;
 	for (auto& action : actions) {
 		if (action.action->IsFinished()) {
-			actions.erase(action);
-			delete action.action;
+			to_delete.emplace_back(action);
 		}
 		else
 			action.action->Update(deltaTime);
+	}
+
+	for (auto& action : to_delete) {
+		actions.erase(action);
+		delete action.action;
 	}
 }
 

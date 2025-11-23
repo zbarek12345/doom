@@ -88,6 +88,14 @@ namespace NewModels {
 			offsets[id + 1] = yOffset;
 		}
 
+		void setSectorTag(uint16_t tag) {
+			sector_tag = tag;
+		}
+
+		void DeleteSpecialType() {
+			special_type = 0;
+		}
+
 		uint16_t getSpecialType() const {
 			return special_type;
 		}

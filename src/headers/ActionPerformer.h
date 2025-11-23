@@ -57,6 +57,26 @@ public:
 		static int16_t findAdjacentCeiling(Sector* sector);
 	};
 
+	class LiftAction : public ActionPerformer {
+		int16_t original_height;
+		int16_t target_height;
+		uint8_t wait_time;
+		float wait_timer;
+		Sector* target;
+
+		enum LiftDirection {
+			Up,
+			Wait,
+			Down
+		}LiftDir_;
+	public:
+		LiftAction(uint8_t speed);
+		void BindTargets(void *target) override;
+		void Update(double deltaTime) override;
+
+		static int16_t findAdjacentFloor(const Sector* sector);
+	};
+
 }
 
 #endif //DOOM_ACTIONPERFORMER_H

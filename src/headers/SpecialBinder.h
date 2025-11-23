@@ -19,7 +19,7 @@ enum class ActivationType {
 class SpecialBinder {
 	static std::map<uint16_t, std::set<NewModels::Sector*>> tags;
 public:
-	static void CreateSpecial(const NewModels::Wall* activator, ActivationType t);
+	static void CreateSpecial(NewModels::Wall *activator, ActivationType t);
 
 	static void BindSpecial(uint16_t tag, NewModels::Sector* sector);
 

@@ -221,7 +221,9 @@ NewModels::Map *Parser::generateMap(int id) {
 			sector->floor_height = sector_def->floor_height;
 			sector->ceil_height = sector_def->ceiling_height;
 			sector->bindTextures(tb->GetTexture(sector_def->floor_texture, TextureType::FlatTexture), tb->GetTexture(sector_def->ceiling_texture, TextureType::FlatTexture));
-			SpecialBinder::BindSpecial(sector_def->tag_no, sector);{
+			if (sector_def->tag_no != 0)
+				SpecialBinder::BindSpecial(sector_def->tag_no, sector);
+			{
 				std::vector<svec2> temp;
 				int16_t ceil = mp->sectors[i].ceiling_height, floor = mp->sectors[i].floor_height;
 
@@ -317,6 +319,8 @@ NewModels::Map *Parser::generateMap(int id) {
 			auto wall = new NewModels::Wall(right_sector, left_sector);
 			wall->setCoordinates(v1, v2);
 			wall->setFlag(line.flags);
+			wall->setSectorTag(line.sector_tag);
+
 			///Right sector handling;
 			if (right_sector != nullptr) {
 				auto sd = &mp->sidedefs[line.sidedef[0]];

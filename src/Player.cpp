@@ -23,7 +23,7 @@ svec3 Player::position = {0,0,0};
 fvec3 Player::pos = {0,0,0};
 fvec3 Player::LookDir = {0,0,0};
 Player* Player::Instance = nullptr;
-bool Player::keys[3] = {0,0,0};
+bool Player::keys[3] = {1,1,1};
 
 Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	Player::position = position;

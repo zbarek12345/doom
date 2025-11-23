@@ -70,7 +70,7 @@ void NewModels::DoorAction::Update(double deltaTime) {
 			}
 		}
 	} else if (this->DoorDir_ == Down) {
-		this->target->ceil_height -= this->speed * deltaTime;
+		this->target->ceil_height -= std::max(1., this->speed * deltaTime);
 		if (this->target->ceil_height <= this->original_height) {
 			this->target->ceil_height = this->original_height;
 			// Finished when fully closed
@@ -106,4 +106,51 @@ int16_t NewModels::DoorAction::findAdjacentCeiling(Sector *sector) {
 		lac = std::min(neighbour->ceil_height, lac);
 	}
 	return lac;
+}
+
+NewModels::LiftAction::LiftAction(uint8_t speed) : ActionPerformer(speed), target(nullptr), original_height(0),
+                                                   target_height(0),
+                                                   wait_time(0),
+                                                   wait_timer(0),
+                                                   LiftDir_(Down){}
+
+void NewModels::LiftAction::BindTargets(void *target) {
+	this->target = static_cast<Sector *>(target);
+	this->original_height = this->target->floor_height;
+	this->target_height = findAdjacentFloor(this->target);
+}
+
+void NewModels::LiftAction::Update(double deltaTime) {
+	assert(target != nullptr);
+	if (LiftDir_ == Down) {
+		this->target->floor_height -= std::max(1., this->speed * deltaTime);
+		if (this->target->floor_height <= this->target_height) {
+			this->target->floor_height = this->target_height;
+			this->LiftDir_ = Wait;
+			this->wait_timer = 0.0f;
+		}
+	}
+
+	else if (LiftDir_ == Up) {
+		this->target->floor_height += std::max(1., this->speed * deltaTime);
+		if (this->target->floor_height >= this->original_height) {
+			this->target->floor_height = this->original_height;
+			finished = true;
+		}
+	}
+
+	else {
+		this->wait_timer += deltaTime;
+		if (this->wait_timer >= wait_time) {
+			this->LiftDir_ = Up;
+		}
+	}
+}
+
+int16_t NewModels::LiftAction::findAdjacentFloor(const Sector *sector) {
+	int16_t haf = SHRT_MAX;
+	for (auto& neighbour : sector->neighbors) {
+		haf = std::min(haf, neighbour->floor_height);
+	}
+	return haf;
 }
