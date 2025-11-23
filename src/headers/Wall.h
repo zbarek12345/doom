@@ -88,7 +88,9 @@ namespace NewModels {
 			offsets[id + 1] = yOffset;
 		}
 
-		void* getSpecial(special_activator_type type);
+		uint16_t getSpecialType() const {
+			return special_type;
+		}
 
 		coordinates getCoordinates() {
 			return coordinates_;
@@ -331,7 +333,6 @@ namespace NewModels {
 		bool AllowWalkThrough(const Sector* start) const {
 			if (other_sector == nullptr || flags_.Impassible)
 				return false;
-			return true;
 			const auto t_sec = start == this_sector ? this_sector : other_sector;
 			const auto o_sec = start == this_sector ? other_sector : this_sector;
 			const auto res = t_sec->floor_height+35 < o_sec->floor_height ||
@@ -347,8 +348,16 @@ namespace NewModels {
 			const auto o_sec = start == this_sector ? other_sector : this_sector;
 		}
 
+		bool IsRight(const Sector* t) const {
+			return this_sector == t;
+		}
+
 		Sector* getOther(Sector* current) const {
 			return other_sector == current ? this_sector : other_sector;
+		}
+
+		Sector* GetLeftSector() const {
+			return other_sector;
 		}
 
 		bool isInCoords(fvec3 point) {

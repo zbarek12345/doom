@@ -3,14 +3,19 @@
 //
 #include "../headers/Map.h"
 
+#include "src/headers/ActionPerformer.h"
 #include "src/headers/Player.h"
 #include "src/headers/RayCaster.h"
+#include "src/headers/SpecialBinder.h"
+
+
+
 
 std::vector<Projectile*> NewModels::Map::projectiles_to_delete = {};
 std::vector<NewModels::Sector> NewModels::Map::sectors = {};
 std::vector<NewModels::Wall*> NewModels::Map::walls = {};
 //std::vector<Entity*> entities;
-std::set<NewModels::ActionPerformer*> NewModels::Map::actions = {};
+std::set<NewModels::Map::ActionPerformStruct, NewModels::Map::ActionPerformLess> NewModels::Map::actions = {};
 std::set<Projectile*> NewModels::Map::projectiles = {};
 svec3 NewModels::Map::player_start = {0,0,0};
 uint16_t NewModels::Map::player_start_angle = 0;
@@ -46,6 +51,26 @@ void NewModels::Map::Update(double deltaTime) {
 		delete projectile;
 	}
 	projectiles_to_delete.clear();
+
+	for (auto& action : actions) {
+		if (action.action->IsFinished()) {
+			actions.erase(action);
+			delete action.action;
+		}
+		else
+			action.action->Update(deltaTime);
+	}
+}
+
+void NewModels::Map::TryAddAction(ActionPerformer* action, Sector* sector, uint16_t special_type) {
+	auto act = ActionPerformStruct{sector, special_type, nullptr};
+	auto it = actions.find(act);
+	if (it != actions.end()) {
+		delete action;
+		return;
+	}
+	act.action = action;
+	actions.emplace(act);
 }
 
 NewModels::Sector * NewModels::Map::getPlayerSector(svec2 pos, Sector *previousSector) {
@@ -108,8 +133,10 @@ void NewModels::Map::HandleMovement(fvec3 &move, fvec3 &player_pos, Sector *&cur
 void NewModels::Map::TryActivateRay(fvec3 &lookVector, Sector *currentSector, fvec3 &start_pos) {
 	bool target_hit;
 	svec3 start_pos_s = (svec3)start_pos;
-	//todo anty
-	// RayCaster::PerformRayCast( lookVector, currentSector, start_pos_s, RayCaster::Interaction, target_hit);
+	auto wall = RayCaster::ActivationRayCast(lookVector, currentSector, start_pos);
+	if (wall && wall->getSpecialType() != 0 && wall->IsRight(currentSector)) {
+		SpecialBinder::CreateSpecial(wall, ActivationType::Trigger);
+	}
 }
 
 NewModels::Map::~Map() {

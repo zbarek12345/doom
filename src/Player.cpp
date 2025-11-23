@@ -52,7 +52,7 @@ void Player::HandleEvent() {
 	if (keys[SDL_SCANCODE_D]) move_strafe += 1;
 	if (keys[SDL_SCANCODE_SPACE]) move_vertical += 1;
 	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= 1;
-	if (keys[SDL_SCANCODE_E] || keys[SDL_SCANCODE_KP_ENTER]) ray_launched = true;
+	if (keys[SDL_SCANCODE_E] || keys[SDL_SCANCODE_SPACE]) ray_launched = true;
 
 	for (int i = SDL_SCANCODE_1; i <= SDL_SCANCODE_9; i++) {
 		if (keys[i]) {
@@ -101,6 +101,7 @@ void Player::Update(double deltaTime) {
 	if (ray_launched) {
 		auto cam_vec = camera->get3DVector();
 		new_map->TryActivateRay(cam_vec, current_sector, pos);
+		ray_launched = false;
 	}
 	weapons[current_weapon]->Update(deltaTime);
 

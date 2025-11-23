@@ -63,20 +63,5 @@ namespace NewModels{
 		Interaction,
 		Shot,
 	};
-
-	//todo zbidowana do linedef, wywolywanie akcji, aktywacja: walkover, click(ray), hit(tylko na ściane)
-	class ActionPerformer {
-		bool finished;
-		uint8_t speed;
-		std::vector<Sector*> sectors;
-
-		bool IsFinished () {
-
-		}
-
-		void Update() {
-
-		}
-	};
 };
 #endif //NEW_MODELS_H

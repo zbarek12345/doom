@@ -483,6 +483,37 @@ namespace NewModels {
 		    // Ray exhausted
 		    return pos;
 		}
+
+		static Wall* ActivationRayCast(
+			fvec3 direction,
+			Sector* currentSector,
+			fvec3 origin) {
+
+			float len = 30.;
+			direction = direction.normalized();
+
+			Wall* hitWall = nullptr;
+			Sector* nextSector = nullptr;
+
+			for (Wall* wall : currentSector->GetWalls())
+			{
+				// Skip backfaces or non-solid walls depending on rayType if needed
+				//if (!wall->IsSolid() && !wall->portal) continue;
+
+				float dist = PlaneIntersectionDistance(wall, direction, origin, len);
+				if (dist >= 0 && dist < len)
+				{
+					len = dist;
+					hitWall = wall;
+					if (wall->AllowBulletThrough(currentSector, 0))
+						nextSector = wall->getOther(currentSector);
+					else
+						nextSector = nullptr;
+				}
+			}
+
+			return hitWall;
+		}
 	};
 
 }
