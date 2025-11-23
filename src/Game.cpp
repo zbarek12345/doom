@@ -170,6 +170,8 @@ void Game::Run() {
                 Player::TryShoot();
         }
 
+        //todo enemy->update()
+
         if (current_map) current_map->Update(deltaTime);
 
         // Set viewport consistently at the start of each frame
@@ -206,6 +208,7 @@ void Game::Run() {
 
             if (player) player->Render();
             if (current_map) current_map->Render();
+            // todo enemy render
 
             HudRender::Render();
             render_time = fmod(render_time, fps_time);

@@ -17,6 +17,7 @@
 #include <regex.h>
 #include "headers/AnimatedEntity.h"
 #include "headers/Collectibles.h"
+#include "headers/Enemy.h"
 #include "headers/playpal.h"
 #include "headers/SpecialBinder.h"
 #include "headers/vec2.h"
@@ -420,6 +421,12 @@ NewModels::Map *Parser::generateMap(int id) {
 					break;
 				case 2035:
 					entity = new BarrelEntity(pos);
+					break;
+
+				//todo enemy
+				case 3001:
+					entity = new Imp(pos);
+					break;
 
 			}
 			if (entity) {

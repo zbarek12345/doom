@@ -182,7 +182,7 @@ namespace NewModels {
             }
 			else {
                 // Two-sided wall
-                // Render lower if this floor > other floor and texture assigned
+                // Render lower if this floor > other floor and texture assigned todo Anty
                 if (wall_tests.lower_wall[0] || wall_tests.lower_wall[1]) {
 				    // Determine which side has the lower floor (the one we're drawing the lower wall on)
 				    Sector* front_sector = this->this_sector;
@@ -209,25 +209,26 @@ namespace NewModels {
 				    float u0 = (xoffs) / (float)tex->w;
 				    float u1 = u0 + wall_len / (float)tex->w;
 
-				    float v_bottom, v_top;
+                	float v_bottom, v_top;
 
-				    if (flags_.LowerUnpegged) {
-				        // === CORRECT LOWER UNPEGGED (Doom behavior) ===
-				        // Texture is drawn from the HIGHER floor upward
-				        // So the row at pixel 'wall_height' in the texture aligns with the higher floor
-				    	v_bottom = 0.0f;
-				    	v_top = wall_height / (float)tex->h;
-				    } else {
-				        // === Normal pegged (default) ===
-				        // Texture starts at lower floor with V=0
-				    	v_top = 0.0f;
-				    	v_bottom = -wall_height / (float)tex->h;
-				    }
+                	float dh = wall_height; // dla czytelnosci
 
-				    // Apply Y offset AFTER pegging (as Doom does)
-				    float y_offset_v = yoffs / (float)tex->h;
-				    v_bottom += y_offset_v;
-				    v_top    += y_offset_v;
+                	if (flags_.LowerUnpegged) {
+                		// tekstura zakotwiczona do podlogi
+                		// jesli sciana wyzsza niz tekstura, przesuwamy start tak,
+                		// aby rzad (dh - tex->h) wypadl na podlodze
+                		v_bottom = 0.0f;
+                		v_top = wall_height / (float)tex->h;
+                	} else {
+                		// klasycznie pegowane do gory
+                		v_top = 0.0f;
+                		v_bottom = -dh / (float)tex->h;
+                	}
+
+                	// y offset po wszystkim
+                	float y_offset_v = yoffs / (float)tex->h;
+                	v_bottom += y_offset_v;
+                	v_top    += y_offset_v;
 
 				    // Draw quad: bottom at lower floor, top at higher floor
 				    glBegin(GL_QUADS);

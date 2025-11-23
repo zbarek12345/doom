@@ -64,4 +64,5 @@ public:
 #define BloodyMessEntity(pos) Entity(pos, 16, "PLAY", "W", false, EntityPosType::Floor)
 #define LampEntity(pos) Entity(pos, 16, "COLU", "A", true, EntityPosType::Floor)
 #define SpaceShipEntity(pos) Entity(pos, 16, "ELEC","A", true, EntityPosType::Floor)
+
 #endif //DOOM_ENTITY_H

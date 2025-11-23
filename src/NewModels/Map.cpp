@@ -42,6 +42,7 @@ void NewModels::Map::Render() {
 }
 
 void NewModels::Map::Update(double deltaTime) {
+	//todo enemies->update?
 	for (auto& projectile : projectiles) {
 		projectile->Update(deltaTime);
 	}
