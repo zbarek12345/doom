@@ -438,6 +438,7 @@ namespace NewModels {
 		                }
 		                else
 		                {
+		                	SpecialBinder::CreateSpecial(wall, ActivationType::Shot);
 		                    // Solid wall → definitive blocking hit
 		                    target_hit = true;
 		                    return pos + dir * hit.distance; // exact hit point

@@ -162,8 +162,16 @@ namespace NewModels {
                 // Basic texture coord calculation (add pegging logic here if needed)
                 float u_left = static_cast<float>(offsets[0]) / this_tex->w;
                 float u_right = u_left + wall_len / this_tex->w;
-                float v_bottom = static_cast<float>(offsets[1]) / this_tex->h;  // v_bottom at top of wall
-                float v_top = v_bottom + wall_height / this_tex->h;  // v_top at bottom of wall
+            	float v_top;
+            	float v_bottom;
+            	if (flags_.LowerUnpegged) {
+            		v_bottom = 0.0f;
+            		v_top = wall_height /static_cast<float>(this_tex->h);
+            	}else {
+            		v_bottom = static_cast<float>(offsets[1]) / this_tex->h;  // v_bottom at top of wall
+            		v_top = v_bottom + wall_height / this_tex->h;  // v_top at bottom of wall
+            	}
+
 
                 glBegin(GL_QUADS);
                 glTexCoord2f(u_left, v_bottom);    glVertex3s(v1.x, this_sector->ceil_height, -v1.y);
@@ -171,66 +179,64 @@ namespace NewModels {
                 glTexCoord2f(u_right, v_top);      glVertex3s(v2.x, this_sector->floor_height, -v2.y);
                 glTexCoord2f(u_left, v_top);       glVertex3s(v1.x, this_sector->floor_height, -v1.y);
                 glEnd();
-            } else {
+            }
+			else {
                 // Two-sided wall
-
                 // Render lower if this floor > other floor and texture assigned
                 if (wall_tests.lower_wall[0] || wall_tests.lower_wall[1]) {
-                	svec2 v1,v2;
-                	Sector* this_sector, *other_sector;
-                	gl_texture* lower_texture;
-                	bool isTexture;
-                	int16_t xoffset, yoffset;
-                	bool reverse = false;
-                	if (this->this_sector->floor_height < this->other_sector->floor_height) {
-                		this_sector = this->this_sector;
-                		other_sector = this->other_sector;
-                		v1 = this->coordinates_.v1;
-                		v2 = this->coordinates_.v2;
-                		lower_texture = &this->lower_texture[0];
-                		xoffset = this->offsets[0];
-                		yoffset = this->offsets[1];
-                		isTexture = wall_tests.lower_wall[0];
-                	}
-                	else {
-                		reverse = true;
-                		this_sector = this->other_sector;
-                		other_sector = this->this_sector;
-                		v1 = this->coordinates_.v2;
-                		v2 = this->coordinates_.v1;
-                		lower_texture = &this->lower_texture[1];
-                		xoffset = this->offsets[2];
-                		yoffset = this->offsets[3];
-                		isTexture = wall_tests.lower_wall[1];
-                	}
-                    glBindTexture(GL_TEXTURE_2D, lower_texture->texture_id);
+				    // Determine which side has the lower floor (the one we're drawing the lower wall on)
+				    Sector* front_sector = this->this_sector;
+				    Sector* back_sector  = this->other_sector;
+				    bool front_is_lower = front_sector->floor_height < back_sector->floor_height;
 
-                    float wall_height = (this_sector->floor_height - other_sector->floor_height);
+				    Sector* lower_sec  = front_is_lower ? front_sector : back_sector;
+				    Sector* higher_sec = front_is_lower ? back_sector  : front_sector;
 
-                    // Pegging for lower: if LowerUnpegged, align from top; else from bottom (adjust yoffset accordingly)
-                    int16_t effective_yoffset = yoffset;
-                    if (flags_.LowerUnpegged) {
-                        // Peg to top: offset from higher floor down
-                        effective_yoffset += (this_sector->floor_height - other_sector->floor_height);
-                    } else {
-                        // Peg to bottom (default): offset from lower floor up
-                        // No adjustment needed beyond base offset
-                    }
+				    gl_texture* tex = front_is_lower ? &this->lower_texture[0] : &this->lower_texture[1];
+				    int16_t xoffs = front_is_lower ? this->offsets[0] : this->offsets[2];
+				    int16_t yoffs = front_is_lower ? this->offsets[1] : this->offsets[3];
 
-                	float u_left = static_cast<float>(offsets[0]) / lower_texture->w;
-                	float u_right = u_left + wall_len / lower_texture->w;
-                	float v_bottom = static_cast<float>(offsets[1]) / lower_texture->h;  // v_bottom at top of wall
-                	float v_top = v_bottom + wall_height / lower_texture->h;  // v_top at bottom of wall
-					if (reverse) {
-						std::swap(u_left, u_right);
-					}
-                    glBegin(GL_QUADS);
-                    glTexCoord2f(u_left, v_bottom);    glVertex3s(v1.x, this_sector->floor_height, -v1.y);
-                    glTexCoord2f(u_right, v_bottom);   glVertex3s(v2.x, this_sector->floor_height, -v2.y);
-                    glTexCoord2f(u_right, v_top);      glVertex3s(v2.x, other_sector->floor_height, -v2.y);
-                    glTexCoord2f(u_left, v_top);       glVertex3s(v1.x, other_sector->floor_height, -v1.y);
-                    glEnd();
-                }
+				    svec2 v1 = front_is_lower ? this->coordinates_.v1 : this->coordinates_.v2;
+				    svec2 v2 = front_is_lower ? this->coordinates_.v2 : this->coordinates_.v1;
+
+				    float higher_floor = higher_sec->floor_height;
+				    float lower_floor  = lower_sec->floor_height;
+				    float wall_height  = higher_floor - lower_floor;  // always positive
+
+				    glBindTexture(GL_TEXTURE_2D, tex->texture_id);
+
+				    // U coordinates (horizontal)
+				    float u0 = (xoffs) / (float)tex->w;
+				    float u1 = u0 + wall_len / (float)tex->w;
+
+				    float v_bottom, v_top;
+
+				    if (flags_.LowerUnpegged) {
+				        // === CORRECT LOWER UNPEGGED (Doom behavior) ===
+				        // Texture is drawn from the HIGHER floor upward
+				        // So the row at pixel 'wall_height' in the texture aligns with the higher floor
+				    	v_bottom = 0.0f;
+				    	v_top = wall_height / (float)tex->h;
+				    } else {
+				        // === Normal pegged (default) ===
+				        // Texture starts at lower floor with V=0
+				    	v_top = 0.0f;
+				    	v_bottom = -wall_height / (float)tex->h;
+				    }
+
+				    // Apply Y offset AFTER pegging (as Doom does)
+				    float y_offset_v = yoffs / (float)tex->h;
+				    v_bottom += y_offset_v;
+				    v_top    += y_offset_v;
+
+				    // Draw quad: bottom at lower floor, top at higher floor
+				    glBegin(GL_QUADS);
+				        glTexCoord2f(u0, v_bottom); glVertex3f(v1.x, lower_floor,  -v1.y);
+				        glTexCoord2f(u1, v_bottom); glVertex3f(v2.x, lower_floor,  -v2.y);
+				        glTexCoord2f(u1, v_top);    glVertex3f(v2.x, higher_floor, -v2.y);
+				        glTexCoord2f(u0, v_top);    glVertex3f(v1.x, higher_floor, -v1.y);
+				    glEnd();
+				}
 
                 // Render upper if this ceil < other ceil and texture assigned
                 if (wall_tests.upper_wall[0] || wall_tests.upper_wall[1]) {
@@ -355,9 +361,10 @@ namespace NewModels {
 		bool AllowBulletThrough(const Sector* start, uint16_t height) const {
 			if (other_sector == nullptr || flags_.Impassible)
 				return false;
-			return true;
-			const auto t_sec = start == this_sector ? this_sector : other_sector;
-			const auto o_sec = start == this_sector ? other_sector : this_sector;
+			auto h = std::min(this_sector->floor_height, other_sector->floor_height);
+			auto l = std::max(this_sector->floor_height, other_sector->floor_height);
+			auto c_sec_id = this_sector == start ? 0 : 1;
+			return height>=l && height<=h && !wall_tests.middle_wall[c_sec_id];
 		}
 
 		bool IsRight(const Sector* t) const {

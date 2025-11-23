@@ -54,6 +54,21 @@ void SpecialBinder::CreateSpecial(NewModels::Wall *activator, ActivationType t) 
 		}
 
 	#pragma endregion
+	if (special_type == 31) {
+		auto action = new NewModels::DoorAction(NewModels::DoorAction::Open, NewModels::DoorAction::Up, 1);
+		auto other_sector = activator->GetLeftSector();
+		action->BindTargets(other_sector);
+		NewModels::Map::TryAddAction(action, other_sector, special_type);
+		activator->DeleteSpecialType();
+	}
+
+	if (special_type == 46 && t == ActivationType::Shot) {
+		auto action = new NewModels::DoorAction(NewModels::DoorAction::Open, NewModels::DoorAction::Up, 255);
+		auto other_sector = activator->GetLeftSector();
+		action->BindTargets(other_sector);
+		NewModels::Map::TryAddAction(action, other_sector, special_type);
+		activator->DeleteSpecialType();
+	}
 
 	if (special_type == 88 && t == ActivationType::Walkover) {
 		for (auto& sector : tags[activator->GetSectorTag()]) {
@@ -63,13 +78,7 @@ void SpecialBinder::CreateSpecial(NewModels::Wall *activator, ActivationType t) 
 		}
 	}
 
-	if (special_type == 31) {
-		auto action = new NewModels::DoorAction(NewModels::DoorAction::Open, NewModels::DoorAction::Up, 1);
-		auto other_sector = activator->GetLeftSector();
-		action->BindTargets(other_sector);
-		NewModels::Map::TryAddAction(action, other_sector, special_type);
-		activator->DeleteSpecialType();
-	}
+
 	//
 	if (special_type == 103) {
 		for (auto& sector : tags[activator->GetSectorTag()]) {

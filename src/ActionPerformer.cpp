@@ -110,7 +110,7 @@ int16_t NewModels::DoorAction::findAdjacentCeiling(Sector *sector) {
 
 NewModels::LiftAction::LiftAction(uint8_t speed) : ActionPerformer(speed), target(nullptr), original_height(0),
                                                    target_height(0),
-                                                   wait_time(0),
+                                                   wait_time(3),
                                                    wait_timer(0),
                                                    LiftDir_(Down){}
 
