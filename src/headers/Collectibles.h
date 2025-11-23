@@ -120,4 +120,25 @@ class BasicHealers : public AnimatedEntity{
 #define BottleOfWater(pos) BasicHealers(pos, 1, 200, "BON1", "ABCDCB");
 #define Supercharge(pos) BasicHealers(pos, 100, 200, "SOUL", "ABCDCB");
 #pragma endregion Health
+
+#pragma region Keys
+
+class KeyCollectible : public AnimatedEntity {
+	uint8_t keyType;
+public:
+	KeyCollectible(svec2 pos, uint8_t keyType, std::string base_name);
+
+	bool AllowCollection() const override;
+
+	void Collect() override;
+};
+
+#define BlueKey(pos) KeyCollectible(pos, 0, "BKEY");
+#define BlueSkull(pos) KeyCollectible(pos, 0, "BSKU");
+#define RedKey(pos) KeyCollectible(pos, 1, "RKEY");
+#define RedSkull(pos) KeyCollectible(pos, 1, "RSKU");
+#define YellowKey(pos) KeyCollectible(pos, 2, "YKEY");
+#define YellowSkull(pos) KeyCollectible(pos, 2, "YSKU");
+
+#pragma endregion
 #endif //DOOM_COLLECTIBLES_H

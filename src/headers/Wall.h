@@ -340,6 +340,10 @@ namespace NewModels {
 			return !res;
 		}
 
+		uint16_t GetSectorTag() const {
+			return sector_tag;
+		}
+
 		bool AllowBulletThrough(const Sector* start, uint16_t height) const {
 			if (other_sector == nullptr || flags_.Impassible)
 				return false;

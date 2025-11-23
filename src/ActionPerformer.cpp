@@ -57,8 +57,8 @@ void NewModels::DoorAction::Update(double deltaTime) {
 	assert(target != nullptr);
 
 	if (this->DoorDir_ == Up) {
-		printf("Up\n, %d\n", target->ceil_height);
-		this->target->ceil_height += this->speed * deltaTime;
+
+		this->target->ceil_height += std::max(1., this->speed * deltaTime);
 		if (this->target->ceil_height >= this->target_height) {
 			this->target->ceil_height = this->target_height;
 			this->DoorDir_ = Wait;

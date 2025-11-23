@@ -226,3 +226,14 @@ void BasicHealers::Collect() {
 	taken = true;
 }
 
+KeyCollectible::KeyCollectible(svec2 pos, uint8_t keyType, std::string base_name) : AnimatedEntity(pos, 20, base_name, "AB", false, EntityPosType::Floor),keyType(keyType) {}
+
+bool KeyCollectible::AllowCollection() const {
+	return true;
+}
+
+void KeyCollectible::Collect() {
+	Player::keys[keyType]=true;
+	taken = true;
+}
+

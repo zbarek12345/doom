@@ -18,6 +18,7 @@
 #include "headers/AnimatedEntity.h"
 #include "headers/Collectibles.h"
 #include "headers/playpal.h"
+#include "headers/SpecialBinder.h"
 #include "headers/vec2.h"
 
 
@@ -219,7 +220,8 @@ NewModels::Map *Parser::generateMap(int id) {
 			sector->id = i;
 			sector->floor_height = sector_def->floor_height;
 			sector->ceil_height = sector_def->ceiling_height;
-			sector->bindTextures(tb->GetTexture(sector_def->floor_texture, TextureType::FlatTexture), tb->GetTexture(sector_def->ceiling_texture, TextureType::FlatTexture));{
+			sector->bindTextures(tb->GetTexture(sector_def->floor_texture, TextureType::FlatTexture), tb->GetTexture(sector_def->ceiling_texture, TextureType::FlatTexture));
+			SpecialBinder::BindSpecial(sector_def->tag_no, sector);{
 				std::vector<svec2> temp;
 				int16_t ceil = mp->sectors[i].ceiling_height, floor = mp->sectors[i].floor_height;
 
@@ -367,6 +369,15 @@ NewModels::Map *Parser::generateMap(int id) {
 			Entity* entity = nullptr;
 			svec2 pos = {thing.x, thing.y};
 			switch (thing.type) {
+				case 0x5:
+					entity = new BlueKey(pos);
+					break;
+				case 0xD:
+					entity = new RedKey(pos);
+					break;
+				case 0x6:
+					entity = new YellowKey(pos);
+					break;
 				case 0xA:
 					entity = new BloodyMessEntity(pos);
 					break;

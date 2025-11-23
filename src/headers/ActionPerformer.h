@@ -56,6 +56,7 @@ public:
 
 		static int16_t findAdjacentCeiling(Sector* sector);
 	};
+
 }
 
 #endif //DOOM_ACTIONPERFORMER_H

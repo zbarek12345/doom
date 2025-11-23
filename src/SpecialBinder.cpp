@@ -6,6 +6,7 @@
 
 #include "headers/ActionPerformer.h"
 #include "headers/Map.h"
+#include "headers/Player.h"
 #include "headers/Wall.h"
 
 std::map<uint16_t, std::set<NewModels::Sector*>> SpecialBinder::tags = {};
@@ -17,10 +18,57 @@ void SpecialBinder::CreateSpecial(const NewModels::Wall *activator, ActivationTy
 		return;
 
 	if (special_type == 1) {
-		auto action = new NewModels::DoorAction(NewModels::DoorAction::OpenClose, NewModels::DoorAction::Up, 100);
+		auto action = new NewModels::DoorAction(NewModels::DoorAction::OpenClose, NewModels::DoorAction::Up, 1);
 		auto other_sector = activator->GetLeftSector();
 		action->BindTargets(other_sector);
 		NewModels::Map::TryAddAction(action, other_sector, special_type);
+	}
+
+	#pragma region Color Keys Open/Close
+
+		if (special_type == 26) {
+			if (!Player::keys[0])
+				return;
+			auto action = new NewModels::DoorAction(NewModels::DoorAction::OpenClose, NewModels::DoorAction::Up, 1);
+			auto other_sector = activator->GetLeftSector();
+			action->BindTargets(other_sector);
+			NewModels::Map::TryAddAction(action, other_sector, special_type);
+		}
+
+		if (special_type == 27) {
+			if (!Player::keys[2])
+				return;
+			auto action = new NewModels::DoorAction(NewModels::DoorAction::OpenClose, NewModels::DoorAction::Up, 1);
+			auto other_sector = activator->GetLeftSector();
+			action->BindTargets(other_sector);
+			NewModels::Map::TryAddAction(action, other_sector, special_type);
+		}
+
+		if (special_type == 28) {
+			if (!Player::keys[1])
+				return;
+			auto action = new NewModels::DoorAction(NewModels::DoorAction::OpenClose, NewModels::DoorAction::Up, 1);
+			auto other_sector = activator->GetLeftSector();
+			action->BindTargets(other_sector);
+			NewModels::Map::TryAddAction(action, other_sector, special_type);
+		}
+
+	#pragma endregion
+
+	if (special_type == 31) {
+		auto action = new NewModels::DoorAction(NewModels::DoorAction::Open, NewModels::DoorAction::Up, 1);
+		auto other_sector = activator->GetLeftSector();
+		action->BindTargets(other_sector);
+		NewModels::Map::TryAddAction(action, other_sector, special_type);
+	}
+	//
+	if (special_type == 103) {
+		for (auto& sector : tags[activator->GetSectorTag()]) {
+			auto action = new NewModels::DoorAction(NewModels::DoorAction::Open, NewModels::DoorAction::Up, 1);
+			auto other_sector = activator->GetLeftSector();
+			action->BindTargets(other_sector);
+			NewModels::Map::TryAddAction(action, other_sector, special_type);
+		}
 	}
 }
 

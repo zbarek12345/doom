@@ -52,7 +52,7 @@ public:
    static bool has_weapon[9];
    static void BindWeapons(std::vector<DoomGunInterface*> Weapons);
    static fvec3 GetPosition();
-
+   static bool keys[3];
    static Player *GetInstance();
 
    static fvec3 LookDir;
