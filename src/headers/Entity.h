@@ -37,7 +37,7 @@ public:
 
 	virtual void bindTextures(std::vector<gl_texture>& textures);
 
-	void Render(fvec2 playerPosition) const;
+	virtual void Render(fvec2 playerPosition) const;
 
 	void SetLimits(svec2 limits);
 

@@ -23,8 +23,9 @@ struct EnemyFrameLoader {
 };
 
 struct EnemyFrame {
-    gl_texture texture;
-    double time;   //czas trwania w sekundach
+    gl_texture angles[8]; //0..7 = doom 1..8
+    bool mirror[8];       //czy odbic w poziomie dla danego kata
+    double time;
 };
 
 
@@ -93,6 +94,8 @@ public:
     void Update(double deltaTime) override;
 
     void bindTextures(std::vector<gl_texture>& textures) override {} //nieuzywane dla Enemy
+
+    void Render(fvec2 playerPosition) const override;
 };
 
 //definicja danych dla Impa, jak Pistol/Shotgun
