@@ -2,24 +2,34 @@
 
 #include <iostream>
 
+#include "headers/Player.h"
 #include "headers/TexBinder.h"
 
 static bool isValidTexture(const gl_texture& t) {
     return t.texture_id != 0 && t.w > 0 && t.h > 0;
 }
 
-Enemy::Enemy(svec2 position, const EnemyInitiator& init)
+Enemy::Enemy(svec2 position,
+             const EnemyInitiator& init,
+             NewModels::Map* map,
+             NewModels::Sector* sector)
     : Entity(position,
              init.radius,
              init.base_texture_name,
-             "",               //tex_sequence niepotrzebne dla Enemy
+             "",
              init.blocks,
-             init.pos_type)
+             init.pos_type),
+      map(map),
+      currentSector(sector)
 {
     health = init.health;
     speed = init.speed;
     reactionTime = init.reactionTime;
     painChance = init.painChance;
+
+    //wysokosc startowa z sektora (floor)
+    float z = sector ? (float)sector->floor_height : 0.f;
+    pos3 = fvec3((float)position.x, z, (float)position.y);
 }
 
 void Enemy::InitAnimations(TexBinder* tb, const EnemyInitiator& init) {
@@ -138,7 +148,11 @@ void Enemy::SetState(EnemyState st) {
 }
 
 void Enemy::Update(double deltaTime) {
-    Entity::Update(deltaTime);
+    //prosty chase do gracza
+    if (!map || !currentSector) {
+        Entity::Update(deltaTime);
+        return;
+    }
 
     auto& seq = frames[(int)currentState];
     if (seq.empty()) return;
@@ -149,33 +163,84 @@ void Enemy::Update(double deltaTime) {
         currentFrame = (currentFrame + 1) % seq.size();
     }
 
-    //Logika
+    //logika
     SetState(EnemyState::Chase);
+
+    currentSector = map->getPlayerSector(svec2{static_cast<short>(pos3.x), static_cast<short>(pos3.z)}, currentSector);
+    pos3.y = currentSector->floor_height;
+
+    fvec3 playerPos3 = Player::GetPosition();
+
+    //zapisz poprzednia pozycje
+    fvec3 prevPos = pos3;
+
+    fvec3 move = playerPos3 - pos3;
+    float len = move.length();
+    if (len > 1e-3f) {
+        move /= len;
+        move *= (float)speed * (float)deltaTime;
+    } else {
+        move = fvec3(0,0,0);
+    }
+
+    //map->HandleMovement(move, pos3, currentSector);
+    pos3 += move;
+
+    //delta ruchu i kierunek
+    fvec3 delta = pos3 - prevPos;
+    if (delta.length_sq() > 1e-6f) {
+        lastMoveDir = fvec2{delta.x, delta.z}.normalized();
+    }
+
+    //zaktualizuj 2d position dla rendera/billboardu
+    position.x = (int16_t)pos3.x;
+    position.y = (int16_t)pos3.z;
+
+    Entity::Update(deltaTime);
+    //std::cout << pos3 << std::endl;
 }
+
 
 void Enemy::Render(fvec2 playerPosition) const {
     const auto& seq = frames[(int)currentState];
     if (seq.empty()) {
-        //brak animacji - rysuj jak zwykle
         Entity::Render(playerPosition);
         return;
     }
 
     const EnemyFrame& frame = seq[currentFrame];
 
-    //wektor od gracza do wroga
-    fvec2 toEntity = (fvec2)position - playerPosition;
+    //wektor od gracza do wroga (do ustawienia billboardu)
+    fvec2 toEntity = fvec2{pos3.x, pos3.z} - playerPosition;
     float len2 = toEntity.length_sq();
     if(len2 < 1e-6f) {
         Entity::Render(playerPosition);
         return;
     }
 
-    float ang = atan2(-toEntity.y, toEntity.x); //cw
-    if(ang < 0.f) ang += 2.f * (float)M_PI;
+    //wektor od wroga do gracza (z punktu widzenia wroga)
+    fvec2 toPlayer = (playerPosition - fvec2{pos3.x, pos3.z});
+    //kierunek "przodu" wroga:
+    //jesli sie poruszal -> ostatni kierunek ruchu
+    //jesli stoi -> niech "patrzy" na gracza
+    fvec2 facingDir;
+    if (lastMoveDir.length_sq() > 1e-6f)
+        facingDir = lastMoveDir.normalized();
+    else
+        facingDir = toPlayer; //jak stoi, obrocony twarza do gracza
+
+    //kat wzgledny miedzy przodem wroga a graczem
+    //0 = gracz przed wrogiem, pi = za plecami, +-pi/2 = boki
+    float dot = facingDir.x * toPlayer.x + facingDir.y * toPlayer.y;
+    float det = facingDir.x * toPlayer.y - facingDir.y * toPlayer.x;
+    float ang = atan2(det, dot); // -pi..pi (ccw)
+
+    //zamieniamy na kat CW w [0, 2pi)
+    float angCW = -ang;
+    if (angCW < 0.f) angCW += 2.f * (float)M_PI;
 
     float slice = 2.f * (float)M_PI / 8.f;
-    int rotIndex = (int)((ang + slice * 0.5f) / slice) & 7;
+    int rotIndex = (int)((angCW + slice * 0.5f) / slice) & 7;
 
     gl_texture curTex = frame.angles[rotIndex];
     bool mirror = frame.mirror[rotIndex];
@@ -195,43 +260,40 @@ void Enemy::Render(fvec2 playerPosition) const {
         }
     }
 
-
-    //ponizej to jest w zasadzie skopiowany Entity::Render, tylko uzywa curTex
-
+    //billboard dalej prostopadle do kierunku gracz->wróg
     fvec2 right = toEntity.perpendicular().normalized();
 
     float halfWidth = curTex.w / 2.f;
     fvec2 offset = right * halfWidth;
 
-    fvec2 bottomLeft  = (fvec2)position - offset;
-    fvec2 bottomRight = (fvec2)position + offset;
+    fvec2 bottomLeft  = fvec2{pos3.x, pos3.z} - offset;
+    fvec2 bottomRight = fvec2{pos3.x, pos3.z} + offset;
     fvec2 topLeft     = bottomLeft;
     fvec2 topRight    = bottomRight;
 
     float bottomY = start_height;
     float topY    = start_height + curTex.h;
 
-    //u koordy zalezne od mirror
     float uLeft  = mirror ? 1.0f : 0.0f;
     float uRight = mirror ? 0.0f : 1.0f;
 
     glBindTexture(GL_TEXTURE_2D, curTex.texture_id);
     glBegin(GL_TRIANGLES);
-    glTexCoord2f(uLeft,  1.f); glVertex3f(bottomLeft.x,  bottomY, -bottomLeft.y);
-    glTexCoord2f(uRight, 1.f); glVertex3f(bottomRight.x, bottomY, -bottomRight.y);
-    glTexCoord2f(uRight, 0.f); glVertex3f(topRight.x,    topY,    -topRight.y);
+        glTexCoord2f(uLeft,  1.f); glVertex3f(bottomLeft.x,  bottomY, -bottomLeft.y);
+        glTexCoord2f(uRight, 1.f); glVertex3f(bottomRight.x, bottomY, -bottomRight.y);
+        glTexCoord2f(uRight, 0.f); glVertex3f(topRight.x,    topY,    -topRight.y);
 
-    glTexCoord2f(uLeft,  1.f); glVertex3f(bottomLeft.x,  bottomY, -bottomLeft.y);
-    glTexCoord2f(uRight, 0.f); glVertex3f(topRight.x,    topY,    -topRight.y);
-    glTexCoord2f(uLeft,  0.f); glVertex3f(topLeft.x,     topY,    -topLeft.y);
+        glTexCoord2f(uLeft,  1.f); glVertex3f(bottomLeft.x,  bottomY, -bottomLeft.y);
+        glTexCoord2f(uRight, 0.f); glVertex3f(topRight.x,    topY,    -topRight.y);
+        glTexCoord2f(uLeft,  0.f); glVertex3f(topLeft.x,     topY,    -topLeft.y);
     glEnd();
-
 }
+
 
 const EnemyInitiator ImpInitiator{
     "TROO",   //base_texture_name
     60,       //health
-    8,        //speed
+    12,       //speed
     0.5,      //reactionTime
     0.2f,     //painChance
     true,     //blocks

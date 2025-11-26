@@ -2,6 +2,7 @@
 #define HERETIC_ENEMY_H
 
 #include "Entity.h"
+#include "Map.h"
 #include "TexBinder.h"
 #include "texture.h"
 
@@ -75,17 +76,21 @@ class Enemy: public Entity {
     uint16_t speed = 0;
     double reactionTime = 0.0;
 
-    EnemyState currentState = EnemyState::Chase;
+    EnemyState currentState = EnemyState::Idle;
 
-    //animacje per stan
     std::vector<EnemyFrame> frames[(int)EnemyState::Count];
     double stateTimer = 0.0;
     size_t currentFrame = 0;
 
-    double ticToSeconds = 1.0 / 35.0; //klasyczne doomowe tics
+    double ticToSeconds = 1.0 / 30.0;
 
+    fvec2 lastMoveDir{};
+
+    NewModels::Sector* currentSector = nullptr;
+    fvec3 pos3{};            //pozycja 3d do HandleMovement
+    NewModels::Map* map = nullptr;
 public:
-    Enemy(svec2 position, const EnemyInitiator& init);
+    Enemy(svec2 position, const EnemyInitiator& init, NewModels::Map* map, NewModels::Sector* sector);
 
     void InitAnimations(TexBinder* tb, const EnemyInitiator& init);
 
@@ -101,6 +106,7 @@ public:
 //definicja danych dla Impa, jak Pistol/Shotgun
 extern const EnemyInitiator ImpInitiator;
 
-#define Imp(pos) Enemy(pos, ImpInitiator)
+#define Imp(pos, mapPtr, sectorPtr) Enemy(pos, ImpInitiator, mapPtr, sectorPtr)
+
 
 #endif //HERETIC_ENEMY_H
