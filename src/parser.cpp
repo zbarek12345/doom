@@ -426,13 +426,17 @@ NewModels::Map *Parser::generateMap(int id) {
 				//todo enemy
 				case 3001:
 					entity = new Imp(pos);
+					auto* enemy = static_cast<Enemy*>(entity);
+					enemy->InitAnimations(map->texture_binder, ImpInitiator);
 					break;
 
 			}
 			if (entity) {
 				NewModels::Sector* sec = map->getPlayerSector(svec2(thing.x,thing.y), nullptr);
 
-				{
+				if (dynamic_cast<Enemy*>(entity)) {
+
+				} else {
 					auto tex_seq = std::vector<gl_texture>();
 					auto seq = entity->getTexSequence();
 					auto base = entity->getBaseName();
@@ -442,10 +446,59 @@ NewModels::Map *Parser::generateMap(int id) {
 					entity->bindTextures(tex_seq);
 				}
 
+
+
+
 				entity->SetLimits(svec2(sec->floor_height, sec->ceil_height));
 				sec->entities.emplace(entity);
 			}
 		}
+
+		//todo test: spawn enemies in front of player
+		{
+			//kierunek gracza jako wektor jednostkowy (0 stopni = do gory)
+			float angleRad = map->player_start_angle * (M_PI / 180.0f);
+			fvec2 forward = {
+				static_cast<float>(-sin(angleRad)),
+				static_cast<float>( cos(angleRad))
+			};
+
+			//wektor w prawo (prostopadly do forward)
+			fvec2 right = { forward.y, -forward.x };
+
+			//miejsce spawnowe ~3 tiles przed graczem (3*32 = 96)
+			svec2 baseSpawn = {
+				static_cast<int16_t>(map->player_start.x + forward.x * 128.0f),
+				static_cast<int16_t>(map->player_start.y + forward.y * 128.0f)
+			};
+
+			//spawn 3 impow w szeregu, wycentrowanych przed graczem
+			for(int i = 0; i < 1; ++i) {
+				float offset = (i - 1) * 32.0f; // -32, 0, +32
+				svec2 pos = {
+					static_cast<int16_t>(baseSpawn.x + right.x * offset),
+					static_cast<int16_t>(baseSpawn.y + right.y * offset)
+				};
+
+				auto enemy = new Imp(pos);
+
+				//znajdz sektor
+				auto sec = map->getPlayerSector(pos, nullptr);
+				if(!sec) continue;
+
+				//laduj sprite'y dooma
+				enemy->InitAnimations(map->texture_binder, ImpInitiator);
+
+				//zestaw wysokosc i kolizje
+				enemy->SetLimits(svec2(sec->floor_height, sec->ceil_height));
+
+				//wrzuc do sektora
+				sec->entities.emplace(enemy);
+			}
+
+			printf(">>> spawned test enemies in front of player!\n");
+		}
+
 	}
 
 

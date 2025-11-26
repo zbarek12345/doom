@@ -139,7 +139,7 @@ void Game::Run() {
     double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();
     ///TODO -- xxx
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    // SDL_SetRelativeMouseMode(SDL_TRUE);
     bool size_changed = true;  // Force initial projection setup
     bool fire_btn_down = false;
 

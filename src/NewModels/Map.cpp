@@ -42,7 +42,6 @@ void NewModels::Map::Render() {
 }
 
 void NewModels::Map::Update(double deltaTime) {
-	//todo enemies->update?
 	for (auto& projectile : projectiles) {
 		projectile->Update(deltaTime);
 	}
@@ -66,6 +65,11 @@ void NewModels::Map::Update(double deltaTime) {
 		actions.erase(action);
 		delete action.action;
 	}
+
+	for(auto& sector : sectors) {
+		sector.Update(deltaTime);
+	}
+
 }
 
 void NewModels::Map::TryAddAction(ActionPerformer* action, Sector* sector, uint16_t special_type) {

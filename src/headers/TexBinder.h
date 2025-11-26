@@ -1,6 +1,9 @@
 //
 // Created by Wiktor on 11.10.2025.
 //
+#ifndef TEXBINDER_H
+#define TEXBINDER_H
+
 #include <unordered_map>
 #include <string>
 #include <cstdint>
@@ -33,3 +36,5 @@ public:
 
    ~TexBinder();
 };
+
+#endif //TEXBINDER_H

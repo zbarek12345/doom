@@ -35,7 +35,7 @@ void DoomGunInterface::Select() {
 }
 
 void DoomGunInterface::Update(double deltaTime) {
-	printf("%lf\n", deltaTime);
+	//printf("%lf\n", deltaTime);
 	if (currentState == WeaponState::FIRING || currentState == WeaponState::REFIRING) {
 		frameTimer += deltaTime;
 		if (frameTimer > frames[static_cast<int>(currentState)][currentFrame].time) {
