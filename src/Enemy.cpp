@@ -188,8 +188,18 @@ void Enemy::TakeDamage(uint16_t dmg) {
 
     if (dmg >= health) {
         health = 0;
-        SetState(EnemyState::Death);
-        this->blocks = false;
+        blocks = false;
+
+        //gib → jeśli overkill duży (np. 2× hp)
+        bool gib = (dmg >= 2 * (int)health + 50); //możesz zmienić próg
+
+        if (gib) {
+            SetState(EnemyState::Gib); //gib state
+            //TODO SpawnExplosion();                //dodamy zaraz
+        } else {
+            SetState(EnemyState::Death);     //normalna śmierć
+        }
+
         return;
     }
 
@@ -225,11 +235,6 @@ void Enemy::Update(double deltaTime) {
     fvec3 playerPos3 = Player::GetPosition();
     fvec3 toPlayer3 = playerPos3 - pos3;
     float dist2D = fvec2{toPlayer3.x, toPlayer3.z}.length();
-
-    //stan death wymusza brak ruchu i ataku
-    if (health == 0) {
-        SetState(EnemyState::Death);
-    }
 
     //stan pain: licz czas i po animacji wracaj do chase/death
     if (currentState == EnemyState::Pain) {
@@ -347,7 +352,7 @@ void Enemy::Update(double deltaTime) {
         while (stateTimer >= seq[currentFrame].time) {
             stateTimer -= seq[currentFrame].time;
 
-            if (currentState == EnemyState::Death) {
+            if (currentState == EnemyState::Death || currentState == EnemyState::Gib) {
                 //death: dochodzimy do ostatniej klatki i tam zostajemy
                 if (currentFrame + 1 < seq.size()) {
                     currentFrame++;
@@ -355,8 +360,11 @@ void Enemy::Update(double deltaTime) {
                     currentFrame = seq.size() - 1;
                 }
             } else {
-                //inne stany: normalna petla
-                currentFrame = (currentFrame + 1) % seq.size();
+                if (currentFrame + 1 < seq.size()) {
+                    currentFrame++;
+                } else {
+                    currentFrame = 0;
+                }
             }
         }
     }
@@ -495,6 +503,6 @@ const EnemyInitiator ImpInitiator{
     },
     //Gib
     {
-        //puste albo inne litery
+            { 'N', 6 }, { 'O', 6 }, { 'P', 6 }, { 'Q', 6 }, { 'R', 6 },{ 'S', 6 },{ 'T', 6 },{ 'U', 6 },
     }
 };

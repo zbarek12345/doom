@@ -14,7 +14,8 @@ enum class EnemyState {
     Projectile,
     Pain,
     Death,
-    Rescoured,
+    Gib,
+    // Rescoured,
     Count
 };
 
@@ -50,7 +51,7 @@ struct EnemyInitiator {
                    std::vector<EnemyFrameLoader> projectile,
                    std::vector<EnemyFrameLoader> painSeq,
                    std::vector<EnemyFrameLoader> death,
-                   std::vector<EnemyFrameLoader> rescoured)
+                   std::vector<EnemyFrameLoader> gib)
             : base_texture_name(std::move(base)),
               health(hp),
               speed(spd),
@@ -66,7 +67,7 @@ struct EnemyInitiator {
         loaders[(int)EnemyState::Projectile] = std::move(projectile);
         loaders[(int)EnemyState::Pain]       = std::move(painSeq);
         loaders[(int)EnemyState::Death]      = std::move(death);
-        loaders[(int)EnemyState::Rescoured]        = std::move(rescoured);
+        loaders[(int)EnemyState::Gib]        = std::move(gib);
     }
 };
 
@@ -74,7 +75,7 @@ class Enemy: public Entity {
     uint16_t health = 100;
     float painChance = 0.05f;
     uint16_t speed = 0;
-    double reactionTime = 0.0;
+    double reactionTime = 1.0;
 
     //parametry walki
     float meleeRange = 40.0f;      //zasieg prostego melee
