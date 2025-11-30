@@ -44,6 +44,10 @@ public:
 
    static void TryShoot();
 
+   static void TakeDamage(uint16_t dmg);
+
+   static int16_t GetHealth();
+
    static bool has_backpack;
    static int16_t health; static int16_t armor;
    ///[0] - Bull, [1] - Shell, [2] - Miss, [3] - Cell

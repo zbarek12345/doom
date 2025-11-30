@@ -468,8 +468,8 @@ NewModels::Map *Parser::generateMap(int id) {
 
 			//miejsce spawnowe ~4 tiles przed graczem (4*32 = 128)
 			svec2 baseSpawn = {
-				static_cast<int16_t>(map->player_start.x + forward.x * 128.0f),
-				static_cast<int16_t>(map->player_start.y + forward.y * 128.0f)
+				static_cast<int16_t>(map->player_start.x + forward.x * 32.0f * 6.0f),
+				static_cast<int16_t>(map->player_start.y + forward.y * 32.0f * 6.0f)
 			};
 
 			//spawn 3 impow w szeregu, wycentrowanych przed graczem

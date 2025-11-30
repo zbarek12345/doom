@@ -147,49 +147,107 @@ void Enemy::SetState(EnemyState st) {
     stateTimer = 0.0;
 }
 
+void Enemy::TakeDamage(uint16_t dmg) {
+    if (health == 0) return;
+
+    if (dmg >= health) {
+        health = 0;
+        SetState(EnemyState::Death);
+        return;
+    }
+
+    health -= dmg;
+
+    float r = (float)rand() / (float)RAND_MAX;
+    if (r < painChance) {
+        SetState(EnemyState::Pain);
+    }
+}
+
 void Enemy::Update(double deltaTime) {
-    //prosty chase do gracza
+    //bez mapy/sektora nic nie robimy
     if (!map || !currentSector) {
         Entity::Update(deltaTime);
         return;
     }
 
-    auto& seq = frames[(int)currentState];
-    if (seq.empty()) return;
-
-    stateTimer += deltaTime;
-    while (stateTimer >= seq[currentFrame].time) {
-        stateTimer -= seq[currentFrame].time;
-        currentFrame = (currentFrame + 1) % seq.size();
-    }
-
-    //logika
-    SetState(EnemyState::Chase);
-
-    currentSector = map->getPlayerSector(svec2{static_cast<short>(pos3.x), static_cast<short>(pos3.z)}, currentSector);
+    //aktualizacja sektora i wysokosci
+    currentSector = map->getPlayerSector(
+        svec2{static_cast<short>(pos3.x), static_cast<short>(pos3.z)},
+        currentSector
+    );
     pos3.y = currentSector->floor_height;
 
+    //odliczanie cooldownu ciosu
+    meleeAttackCooldown -= deltaTime;
+    if (meleeAttackCooldown < 0.0) meleeAttackCooldown = 0.0;
+
+    //pozycja gracza i dystans 2d
     fvec3 playerPos3 = Player::GetPosition();
+    fvec3 toPlayer3 = playerPos3 - pos3;
+    float dist2D = fvec2{toPlayer3.x, toPlayer3.z}.length();
 
-    //zapisz poprzednia pozycje
-    fvec3 prevPos = pos3;
-
-    fvec3 move = playerPos3 - pos3;
-    float len = move.length();
-    if (len > 1e-3f) {
-        move /= len;
-        move *= (float)speed * (float)deltaTime;
+    //death: tylko animacja, bez ruchu
+    if (health == 0) {
+        SetState(EnemyState::Death);
     } else {
-        move = fvec3(0,0,0);
+        //budzenie z idle
+        if (!isAwake) {
+            if (dist2D < wakeDistance) {
+                isAwake = true;
+            } else {
+                SetState(EnemyState::Idle);
+            }
+        }
+
+        //pain: tylko animacja, bez ruchu
+        if (currentState == EnemyState::Pain) {
+            //nic nie robimy, animacja nizej
+        } else if (isAwake && health > 0) {
+            //melee vs chase
+            if (dist2D <= meleeRange) {
+                SetState(EnemyState::Melee);
+
+                //prosty melee: co meleeAttackInterval sekund zadaj dmg
+                if (meleeAttackCooldown == 0.0f) {
+                    Player::TakeDamage(meleeDamage);
+                    meleeAttackCooldown = meleeAttackInterval;
+                }
+            } else {
+                SetState(EnemyState::Chase);
+
+                //ruch w strone gracza
+                fvec3 prevPos = pos3;
+                fvec3 move = toPlayer3;
+                float len = move.length();
+                if (len > 1e-3f) {
+                    move /= len;
+                    move *= (float)speed * (float)deltaTime;
+                } else {
+                    move = fvec3(0,0,0);
+                }
+
+                //ruch z kolizjami (na razie jak u ciebie)
+                //map->HandleMovement(move, pos3, currentSector);
+                pos3 += move;
+
+                //delta ruchu i kierunek
+                fvec3 delta = pos3 - prevPos;
+                if (delta.length_sq() > 1e-6f) {
+                    lastMoveDir = fvec2{delta.x, delta.z}.normalized();
+                }
+            }
+        }
     }
 
-    //map->HandleMovement(move, pos3, currentSector);
-    pos3 += move;
-
-    //delta ruchu i kierunek
-    fvec3 delta = pos3 - prevPos;
-    if (delta.length_sq() > 1e-6f) {
-        lastMoveDir = fvec2{delta.x, delta.z}.normalized();
+    //animacja po ustaleniu currentState
+    auto& seq = frames[(int)currentState];
+    if (!seq.empty()) {
+        stateTimer += deltaTime;
+        while (stateTimer >= seq[currentFrame].time) {
+            stateTimer -= seq[currentFrame].time;
+            currentFrame = (currentFrame + 1) % seq.size();
+        }
     }
 
     //zaktualizuj 2d position dla rendera/billboardu
@@ -197,7 +255,6 @@ void Enemy::Update(double deltaTime) {
     position.y = (int16_t)pos3.z;
 
     Entity::Update(deltaTime);
-    //std::cout << pos3 << std::endl;
 }
 
 

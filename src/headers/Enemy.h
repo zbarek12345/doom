@@ -76,6 +76,17 @@ class Enemy: public Entity {
     uint16_t speed = 0;
     double reactionTime = 0.0;
 
+    //parametry walki
+    float meleeRange = 40.0f;      //zasieg prostego melee
+    uint16_t meleeDamage = 10;     //obrazenia melee
+
+    double meleeAttackCooldown = 0.0;   //czas do nastepnego ciosu
+    double meleeAttackInterval = 0.7;   //co ile sekund moze uderzyc
+
+    //budzenie z idle
+    bool isAwake = false;
+    float wakeDistance = 512.0f;   //kiedy zaczyna gonic gracza
+
     EnemyState currentState = EnemyState::Idle;
 
     std::vector<EnemyFrame> frames[(int)EnemyState::Count];
@@ -95,6 +106,10 @@ public:
     void InitAnimations(TexBinder* tb, const EnemyInitiator& init);
 
     void SetState(EnemyState st);
+
+    void TakeDamage(uint16_t dmg);
+
+    bool IsDead() const { return health == 0; }
 
     void Update(double deltaTime) override;
 

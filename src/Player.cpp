@@ -205,6 +205,30 @@ void Player::TryShoot() {
 	}
 }
 
+void Player::TakeDamage(uint16_t dmg) {
+	if (health <= 0) return;
+
+	int remaining = (int)dmg;
+
+	//prosta absorpcja przez armor, cos w stylu dooma
+	if (armor > 0 && remaining > 0) {
+		int armor_absorb = remaining * 2 / 3; //2/3 idzie w armor
+		if (armor_absorb > armor) armor_absorb = armor;
+		armor -= armor_absorb;
+		remaining -= armor_absorb;
+	}
+
+	if (remaining <= 0) return;
+
+	health -= remaining;
+	if (health < 0) health = 0;
+	//tu ewentualnie: flaga 'player hurt', dzwiek, efekt kamery itd.
+}
+
+int16_t Player::GetHealth() {
+	return health;
+}
+
 void Player::BindWeapons(std::vector<DoomGunInterface *> weapons) {
 	assert(weapons.size() == NUM_WEAPONS);
 	Player::weapons = weapons;
