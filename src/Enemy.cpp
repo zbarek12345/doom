@@ -506,3 +506,81 @@ const EnemyInitiator ImpInitiator{
             { 'N', 6 }, { 'O', 6 }, { 'P', 6 }, { 'Q', 6 }, { 'R', 6 },{ 'S', 6 },{ 'T', 6 },{ 'U', 6 },
     }
 };
+
+const EnemyInitiator DemonInitiator{
+    "SARG",   //base_texture_name (doomowy demon/pinky)
+    150,      //health
+    10,       //speed
+    0.2,      //reactionTime
+    0.1f,     //painChance
+    true,     //blocks
+    EntityPosType::Floor,
+    30,       //radius
+
+    //Idle
+    {
+                { 'A', 10 }
+    },
+    //Chase (klasyczne ABCD petla)
+    {
+                { 'A', 4 }, { 'B', 4 }, { 'C', 4 }, { 'D', 4 }
+    },
+    //Melee (szarza/gryzienie)
+    {
+                { 'E', 6 }, { 'F', 6 }
+    },
+    //Projectile - demon nie strzela
+    {
+    },
+    //Pain
+    {
+                { 'G', 3 }
+    },
+    //Death
+    {
+                { 'H', 6 }, { 'I', 6 }, { 'J', 6 }, { 'K', 6 }
+    },
+    //Gib (jak chcesz, moze byc puste, albo osobne sprite)
+    {
+    }
+};
+
+const EnemyInitiator ZombieManInitiator{
+    "POSS",   //base_texture_name (former human)
+    20,       //health
+    100,        //speed
+    0.5,      //reactionTime
+    0.3f,     //painChance
+    true,     //blocks
+    EntityPosType::Floor,
+    16,       //radius
+
+    //Idle
+    {
+                { 'A', 10 }
+    },
+    //Chase (A B C D)
+    {
+                { 'A', 4 }, { 'B', 4 }, { 'C', 4 }, { 'D', 4 }
+    },
+    //Melee - na razie uzyjemy tego zamiast strzelania
+    {
+                { 'E', 6 }, { 'F', 6 }
+    },
+    //Projectile - tu w przyszlosci damy animacje strzalu
+    {
+        //{ 'E', 6 }, { 'F', 6 } //jak bedziemy robic missile attack
+    },
+    //Pain
+    {
+                { 'G', 3 }
+    },
+    //Death
+    {
+                { 'H', 6 }, { 'I', 6 }, { 'J', 6 }, { 'K', 6 }
+    },
+    //Gib
+    {
+                { 'L', 6 }, { 'M', 6 }, { 'N', 6 }, { 'O', 6 }, { 'P', 6 }
+    }
+};

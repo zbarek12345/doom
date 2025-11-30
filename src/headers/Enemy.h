@@ -75,7 +75,7 @@ class Enemy: public Entity {
     uint16_t health = 100;
     float painChance = 0.05f;
     uint16_t speed = 0;
-    double reactionTime = 1.0;
+    double reactionTime = 0.0;
 
     //parametry walki
     float meleeRange = 40.0f;      //zasieg prostego melee
@@ -127,8 +127,11 @@ public:
 
 //definicja danych dla Impa, jak Pistol/Shotgun
 extern const EnemyInitiator ImpInitiator;
+extern const EnemyInitiator DemonInitiator; //Demon (pinky) - melee
+extern const EnemyInitiator ZombieManInitiator; //ZombieMan - na razie melee (AI strzelania dorobimy osobno)
 
 #define Imp(pos, mapPtr, sectorPtr) Enemy(pos, ImpInitiator, mapPtr, sectorPtr)
-
+#define Demon(pos, mapPtr, sectorPtr) Enemy(pos, DemonInitiator, mapPtr, sectorPtr)
+#define ZombieMan(pos, mapPtr, sectorPtr) Enemy(pos, ZombieManInitiator, mapPtr, sectorPtr)
 
 #endif //HERETIC_ENEMY_H
