@@ -7,8 +7,7 @@
 #include "src/headers/Player.h"
 #include "src/headers/RayCaster.h"
 #include "src/headers/SpecialBinder.h"
-
-
+#include "src/headers/Enemy.h"
 
 
 std::vector<Projectile*> NewModels::Map::projectiles_to_delete = {};
@@ -105,17 +104,47 @@ void NewModels::Map::HandleProjectile(Projectile *projectile, float bullet_dista
 	fvec3 pos, dir;
 	projectile->GetDetails(dir, pos);
 	auto psector = projectile->GetSector();
-	auto target_hit = false;
-	dir*=bullet_distance;
-	auto ret = RayCaster::PerformRayCast(dir, psector, pos, RayCaster::Shot, target_hit, projectile->GetCaster());
+	bool target_hit = false;
+
+	dir *= bullet_distance;
+
+	RayCaster::RayCastResultType hitType;
+	void* hitTarget = nullptr;
+
+	auto ret = RayCaster::PerformRayCast(
+		dir,
+		psector,
+		pos,
+		RayCaster::Shot,
+		target_hit,
+		projectile->GetCaster(),
+		&hitType,
+		&hitTarget
+	);
 
 	if (target_hit) {
+		//zadaj obrazenia w zaleznosci od trafionego celu
+		uint16_t dmg = projectile->GetDamage();
+
+		if (hitType == RayCaster::RayCastResultType::Player) {
+			Player::TakeDamage(dmg);
+		} else if (hitType == RayCaster::RayCastResultType::Entity && hitTarget) {
+			auto* ent = static_cast<Entity*>(hitTarget);
+			if (auto* enemy = dynamic_cast<Enemy*>(ent)) {
+				enemy->TakeDamage(dmg);
+			}
+			//tu pozniej mozna dodac inne typy entity (beczki itd.)
+		}
+
+		//pocisk znika po trafieniu
 		projectiles_to_delete.push_back(projectile);
-	}else{
+	} else {
+		//nic nie trafil - lecimy dalej
 		projectile->SetSector(psector);
 		projectile->SetPosition(ret);
 	}
 }
+
 
 void NewModels::Map::HandleMovement(fvec3 &move, fvec3 &player_pos, Sector *&currentSector) {
 	while (!move.is_zero()) {

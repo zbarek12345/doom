@@ -87,6 +87,12 @@ class Enemy: public Entity {
     bool isAwake = false;
     float wakeDistance = 512.0f;   //kiedy zaczyna gonic gracza
 
+    double painTimer = 0.0;
+    double painDuration = 0.0; //wyliczymy z animacji
+
+    bool hasTarget = false;
+    double seeTimer = 0.0;
+
     EnemyState currentState = EnemyState::Idle;
 
     std::vector<EnemyFrame> frames[(int)EnemyState::Count];

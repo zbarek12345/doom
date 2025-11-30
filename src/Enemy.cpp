@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "headers/Player.h"
+#include "headers/RayCaster.h"
 #include "headers/TexBinder.h"
 
 static bool isValidTexture(const gl_texture& t) {
@@ -28,8 +29,9 @@ Enemy::Enemy(svec2 position,
     painChance = init.painChance;
 
     //wysokosc startowa z sektora (floor)
-    float z = sector ? (float)sector->floor_height : 0.f;
-    pos3 = fvec3((float)position.x, z, (float)position.y);
+    float floor_y = sector ? (float)sector->floor_height : 0.f;
+    //jak u gracza: srodek bytu troche nad podloga (46 to magic z Playera)
+    pos3 = fvec3((float)position.x, floor_y + 46.0f, (float)position.y);
 }
 
 void Enemy::InitAnimations(TexBinder* tb, const EnemyInitiator& init) {
@@ -46,12 +48,32 @@ void Enemy::InitAnimations(TexBinder* tb, const EnemyInitiator& init) {
             std::string base = init.base_texture_name;
             char c = fl.let;
 
+            //najpierw sprawdz czy istnieje wersja bez rotacji: BASE + litera + "0"
+            gl_texture noRotTex{};
+            bool hasNoRot = false;
+            {
+                std::string noRotName = base + c + std::string("0");
+                auto texTry = tb->GetTexture(noRotName.c_str(), TextureType::ItemTexture);
+                if (isValidTexture(texTry)) {
+                    noRotTex = texTry;
+                    hasNoRot = true;
+                }
+            }
+
             for(int ai = 0; ai < 8; ++ai) {
-                int doomAngle = ai + 1; //0..7 -> 1..8
                 gl_texture chosen{};
                 bool found = false;
                 bool mirror = false;
 
+                if (hasNoRot) {
+                    //jedna tekstura dla wszystkich katow
+                    fr.angles[ai] = noRotTex;
+                    fr.mirror[ai] = false;
+                    anyAngleLoaded = true;
+                    continue;
+                }
+
+                int doomAngle = ai + 1; //0..7 -> 1..8
                 std::vector<std::string> candidates;
 
                 //kandydaci zalezni od kata
@@ -138,6 +160,16 @@ void Enemy::InitAnimations(TexBinder* tb, const EnemyInitiator& init) {
         currentFrame = 0;
         stateTimer = 0.0;
     }
+
+    //wylicz calkowity czas animacji Pain
+    auto& painSeq = frames[(int)EnemyState::Pain];
+    painDuration = 0.0;
+    for (auto& fr : painSeq) {
+        painDuration += fr.time;
+    }
+    if (painDuration <= 0.0) {
+        painDuration = 0.2; //fallback gdyby bylo pusto / zero
+    }
 }
 
 void Enemy::SetState(EnemyState st) {
@@ -145,6 +177,10 @@ void Enemy::SetState(EnemyState st) {
     currentState = st;
     currentFrame = 0;
     stateTimer = 0.0;
+
+    if (st == EnemyState::Pain) {
+        painTimer = 0.0;
+    }
 }
 
 void Enemy::TakeDamage(uint16_t dmg) {
@@ -153,10 +189,12 @@ void Enemy::TakeDamage(uint16_t dmg) {
     if (dmg >= health) {
         health = 0;
         SetState(EnemyState::Death);
+        this->blocks = false;
         return;
     }
 
     health -= dmg;
+    // std::cout<<health<< std::endl;
 
     float r = (float)rand() / (float)RAND_MAX;
     if (r < painChance) {
@@ -176,9 +214,10 @@ void Enemy::Update(double deltaTime) {
         svec2{static_cast<short>(pos3.x), static_cast<short>(pos3.z)},
         currentSector
     );
-    pos3.y = currentSector->floor_height;
+    //jak u gracza: trzymaj y nad podloga
+    pos3.y = currentSector->floor_height + 46.0f;
 
-    //odliczanie cooldownu ciosu
+    //cooldown ciosu melee
     meleeAttackCooldown -= deltaTime;
     if (meleeAttackCooldown < 0.0) meleeAttackCooldown = 0.0;
 
@@ -187,11 +226,79 @@ void Enemy::Update(double deltaTime) {
     fvec3 toPlayer3 = playerPos3 - pos3;
     float dist2D = fvec2{toPlayer3.x, toPlayer3.z}.length();
 
-    //death: tylko animacja, bez ruchu
+    //stan death wymusza brak ruchu i ataku
     if (health == 0) {
         SetState(EnemyState::Death);
-    } else {
-        //budzenie z idle
+    }
+
+    //stan pain: licz czas i po animacji wracaj do chase/death
+    if (currentState == EnemyState::Pain) {
+        painTimer += deltaTime;
+        if (painTimer >= painDuration) {
+            if (health > 0) {
+                SetState(EnemyState::Chase);
+            } else {
+                SetState(EnemyState::Death);
+            }
+        }
+    }
+
+    //line of sight tylko dla zywego przeciwnika
+    bool seePlayer = false;
+    if (health > 0) {
+        bool hit = false;
+        NewModels::RayCaster::RayCastResultType type;
+        void* target = nullptr;
+
+        fvec3 dir = playerPos3 - pos3;
+        float len = dir.length();
+        if (len > 1e-3f) {
+            dir /= len;
+        }
+
+        NewModels::RayCaster::PerformRayCast(
+            dir * len,
+            currentSector,
+            pos3,
+            NewModels::RayCaster::Shot,
+            hit,
+            this,       //ignore self
+            &type,
+            &target
+        );
+
+        if (hit && type == NewModels::RayCaster::RayCastResultType::Player) {
+            seePlayer = true;
+        }
+    }
+
+    //logika widzenia i budzenia
+    if (health > 0) {
+        if (!hasTarget) {
+            if (seePlayer) {
+                hasTarget = true;
+                seeTimer = reactionTime;
+                SetState(EnemyState::Idle);
+            } else {
+                SetState(EnemyState::Idle);
+            }
+        } else {
+            //opcjonalnie: gubienie celu gdy nie widzi gracza
+        }
+    }
+
+    //reaction time
+    if (hasTarget && health > 0) {
+        if (seeTimer > 0.0) {
+            seeTimer -= deltaTime;
+            if (seeTimer < 0.0) seeTimer = 0.0;
+        }
+    }
+
+    //gdy zywy, ma cel, reaction time minelo i nie jest w pain -> chase/melee
+    if (health > 0 && hasTarget && seeTimer == 0.0 && currentState != EnemyState::Pain) {
+
+        //budzenie z idle na podstawie dystansu
         if (!isAwake) {
             if (dist2D < wakeDistance) {
                 isAwake = true;
@@ -200,23 +307,18 @@ void Enemy::Update(double deltaTime) {
             }
         }
 
-        //pain: tylko animacja, bez ruchu
-        if (currentState == EnemyState::Pain) {
-            //nic nie robimy, animacja nizej
-        } else if (isAwake && health > 0) {
-            //melee vs chase
+        if (isAwake) {
             if (dist2D <= meleeRange) {
+                //melee
                 SetState(EnemyState::Melee);
-
-                //prosty melee: co meleeAttackInterval sekund zadaj dmg
                 if (meleeAttackCooldown == 0.0f) {
                     Player::TakeDamage(meleeDamage);
                     meleeAttackCooldown = meleeAttackInterval;
                 }
             } else {
+                //chase z kolizjami
                 SetState(EnemyState::Chase);
 
-                //ruch w strone gracza
                 fvec3 prevPos = pos3;
                 fvec3 move = toPlayer3;
                 float len = move.length();
@@ -224,14 +326,12 @@ void Enemy::Update(double deltaTime) {
                     move /= len;
                     move *= (float)speed * (float)deltaTime;
                 } else {
-                    move = fvec3(0,0,0);
+                    move = fvec3(0, 0, 0);
                 }
 
-                //ruch z kolizjami (na razie jak u ciebie)
-                //map->HandleMovement(move, pos3, currentSector);
-                pos3 += move;
+                map->HandleMovement(move, pos3, currentSector);
+                pos3.y = currentSector->floor_height + 46.0f;
 
-                //delta ruchu i kierunek
                 fvec3 delta = pos3 - prevPos;
                 if (delta.length_sq() > 1e-6f) {
                     lastMoveDir = fvec2{delta.x, delta.z}.normalized();
@@ -246,7 +346,18 @@ void Enemy::Update(double deltaTime) {
         stateTimer += deltaTime;
         while (stateTimer >= seq[currentFrame].time) {
             stateTimer -= seq[currentFrame].time;
-            currentFrame = (currentFrame + 1) % seq.size();
+
+            if (currentState == EnemyState::Death) {
+                //death: dochodzimy do ostatniej klatki i tam zostajemy
+                if (currentFrame + 1 < seq.size()) {
+                    currentFrame++;
+                } else {
+                    currentFrame = seq.size() - 1;
+                }
+            } else {
+                //inne stany: normalna petla
+                currentFrame = (currentFrame + 1) % seq.size();
+            }
         }
     }
 
@@ -256,6 +367,7 @@ void Enemy::Update(double deltaTime) {
 
     Entity::Update(deltaTime);
 }
+
 
 
 void Enemy::Render(fvec2 playerPosition) const {
@@ -379,7 +491,7 @@ const EnemyInitiator ImpInitiator{
     },
     //Death
     {
-            { 'K', 6 }, { 'L', 6 }, { 'M', 6 }, { 'N', 6 }, { 'O', 6 }
+            { 'K', 6 }, { 'L', 6 }, { 'M', 6 },
     },
     //Gib
     {

@@ -186,6 +186,11 @@ namespace NewModels {
 
 			for (auto& collision : collisionResults) {
 				if (collision.entity->Blocks()) {
+					//ignoruj kolizje w punkcie startu (to zwykle jestes ty sam)
+					if (collision.distance <= 0.001f) {
+						continue;
+					}
+
 					vector = fvec3(0, 0, 0);
 					return startingPoint + vector.normalized()*(collision.distance-0.05);
 				}
@@ -284,7 +289,9 @@ namespace NewModels {
 		    fvec3 origin,              // ray origin point
 		    RayType rayType,           // e.g. RAY_WEAPON, RAY_SIGHT, etc. (you can use for special rules)
 		    bool& target_hit,
-		    void* ignore// output: true if we actually hit a blocking target
+		    void* ignore,// output: true if we actually hit a blocking target
+		    RayCastResultType* outType = nullptr,
+			void** outTarget = nullptr
 		) {
 		    target_hit = false;
 		    std::set<RayCastResult, RayCastResultLess> hits;
@@ -440,6 +447,8 @@ namespace NewModels {
 		                {
 		                	SpecialBinder::CreateSpecial(wall, ActivationType::Shot);
 		                    // Solid wall → definitive blocking hit
+		                	if (outType)   *outType   = hit.type;
+		                	if (outTarget) *outTarget = hit.target;
 		                    target_hit = true;
 		                    return pos + dir * hit.distance; // exact hit point
 		                }
@@ -448,6 +457,8 @@ namespace NewModels {
 		            if (hit.type == RayCastResultType::Player)
 		            {
 		            	//Player.Eat(Projectile);
+		            	if (outType)   *outType   = hit.type;
+		            	if (outTarget) *outTarget = hit.target;
 		                target_hit = true;
 		                return pos + dir * hit.distance;
 		            }
@@ -457,6 +468,8 @@ namespace NewModels {
 		            	Entity* ent = static_cast<Entity*>(hit.target);
 		                if (ent->Blocks()) // or flags & MF_SOLID, etc.
 		                {
+		                	if (outType)   *outType   = hit.type;
+		                	if (outTarget) *outTarget = hit.target;
 		                    target_hit = true;
 		                    return pos + dir * hit.distance;
 		                }
@@ -470,6 +483,8 @@ namespace NewModels {
 		            // Floor/ceiling hit (no target pointer)
 		            if (hit.type == RayCastResultType::Flat)
 		            {
+		            	if (outType)   *outType   = hit.type;
+		            	if (outTarget) *outTarget = hit.target;
 		                target_hit = true;
 		                return pos + dir * hit.distance;
 		            }
