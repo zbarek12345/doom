@@ -22,3 +22,12 @@ This project was built for a bachelor thesis. It is not yet finished, but i hope
 - __Sector__ - class responsible for handling sectors of the map (Holds entities inside, as well as the sector's floors/ceiling).
 - __Wall__ - class responsible for handling walls of the map.
 - __ActionPerfromer__ - class responsible for moving map parts, like doors, floors etc..
+
+
+## Dependencies
+
+- OpenGL
+- GLFW
+- GLM
+- SDL2
+- [CDT](https://github.com/artem-ogre/CDT.git)
