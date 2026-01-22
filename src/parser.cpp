@@ -21,6 +21,7 @@
 #include "headers/playpal.h"
 #include "headers/SpecialBinder.h"
 #include "headers/vec2.h"
+#include "headers/Weapon.h"
 
 
 ///Helper function to compare the lump names
@@ -423,46 +424,19 @@ NewModels::Map *Parser::generateMap(int id) {
 					entity = new BarrelEntity(pos);
 					break;
 
-					//enemy
-				case 3001: { //imp
-					auto sec = map->getPlayerSector(pos, nullptr);
-					if(!sec) break;
-
-					auto enemy = new Imp(pos, map, sec);
-					enemy->InitAnimations(map->texture_binder, ImpInitiator);
-					enemy->SetLimits(svec2(sec->floor_height, sec->ceil_height));
-					sec->entities.emplace(enemy);
-
-					entity = nullptr; //zeby nie wpadlo ponizej
-					break;
-				}
-
-				case 3002: { //demon/pinky
-					auto sec = map->getPlayerSector(pos, nullptr);
-					if(!sec) break;
-
-					auto enemy = new Demon(pos, map, sec);
-					enemy->InitAnimations(map->texture_binder, DemonInitiator);
-					enemy->SetLimits(svec2(sec->floor_height, sec->ceil_height));
-					sec->entities.emplace(enemy);
-
-					entity = nullptr;
-					break;
-				}
-
-				case 3004: { //zombieman
-					auto sec = map->getPlayerSector(pos, nullptr);
-					if(!sec) break;
-
-					auto enemy = new ZombieMan(pos, map, sec);
-					enemy->InitAnimations(map->texture_binder, ZombieManInitiator);
-					enemy->SetLimits(svec2(sec->floor_height, sec->ceil_height));
-					sec->entities.emplace(enemy);
-
-					entity = nullptr;
-					break;
-				}
-
+				//todo enemy
+				// case 3001: { //imp
+				// 	auto sec = map->getPlayerSector(pos, nullptr);
+				// 	if(!sec) break;
+				//
+				// 	auto enemy = new Imp(pos, map, sec);
+				// 	enemy->InitAnimations(map->texture_binder, ImpInitiator);
+				// 	enemy->SetLimits(svec2(sec->floor_height, sec->ceil_height));
+				// 	sec->entities.emplace(enemy);
+				//
+				// 	entity = nullptr; //zeby nie wpadlo ponizej
+				// 	break;
+				// }
 
 			}
 			if (entity) {
@@ -481,51 +455,52 @@ NewModels::Map *Parser::generateMap(int id) {
 			}
 		}
 
-		// //todo test: spawn enemies in front of player
-		// {
-		// 	//kierunek gracza jako wektor jednostkowy (0 stopni = do gory)
-		// 	float angleRad = map->player_start_angle * (M_PI / 180.0f);
-		// 	fvec2 forward = {
-		// 		static_cast<float>(-sin(angleRad)),
-		// 		static_cast<float>( cos(angleRad))
-		// 	};
-		//
-		// 	//wektor w prawo (prostopadly do forward)
-		// 	fvec2 right = { forward.y, -forward.x };
-		//
-		// 	//miejsce spawnowe ~4 tiles przed graczem (4*32 = 128)
-		// 	svec2 baseSpawn = {
-		// 		static_cast<int16_t>(map->player_start.x + forward.x * 32.0f * 6.0f),
-		// 		static_cast<int16_t>(map->player_start.y + forward.y * 32.0f * 6.0f)
-		// 	};
-		//
-		// 	//spawn 3 impow w szeregu, wycentrowanych przed graczem
-		// 	for(int i = 0; i < 1; ++i) {
-		// 		float offset = (i - 1) * 32.0f; //-32, 0, +32
-		// 		svec2 pos = {
-		// 			static_cast<int16_t>(baseSpawn.x + right.x * offset),
-		// 			static_cast<int16_t>(baseSpawn.y + right.y * offset)
-		// 		};
-		//
-		// 		//najpierw sektor
-		// 		auto sec = map->getPlayerSector(pos, nullptr);
-		// 		if(!sec) continue;
-		//
-		// 		//tworzymy wroga z mapa i sektorem
-		// 		auto enemy = new Imp(pos, map, sec);
-		//
-		// 		//laduj sprite'y dooma
-		// 		enemy->InitAnimations(map->texture_binder, ImpInitiator);
-		//
-		// 		//zestaw wysokosc i kolizje w pionie
-		// 		enemy->SetLimits(svec2(sec->floor_height, sec->ceil_height));
-		//
-		// 		//wrzuc do sektora
-		// 		sec->entities.emplace(enemy);
-		// 	}
-		//
-		// 	printf(">>> spawned test enemies in front of player!\n");
-		// }
+		//todo test: spawn enemies in front of player
+		{
+			//kierunek gracza jako wektor jednostkowy (0 stopni = do gory)
+			float angleRad = map->player_start_angle * (M_PI / 180.0f);
+			fvec2 forward = {
+				static_cast<float>(-sin(angleRad)),
+				static_cast<float>( cos(angleRad))
+			};
+
+			//wektor w prawo (prostopadly do forward)
+			fvec2 right = { forward.y, -forward.x };
+
+			//miejsce spawnowe ~4 tiles przed graczem (4*32 = 128)
+			svec2 baseSpawn = {
+				static_cast<int16_t>(map->player_start.x + forward.x * 128.0f),
+				static_cast<int16_t>(map->player_start.y + forward.y * 128.0f)
+			};
+
+			//spawn 3 impow w szeregu, wycentrowanych przed graczem
+			for(int i = 0; i < 1; ++i) {
+				float offset = (i - 1) * 32.0f; //-32, 0, +32
+				svec2 pos = {
+					static_cast<int16_t>(baseSpawn.x + right.x * offset),
+					static_cast<int16_t>(baseSpawn.y + right.y * offset)
+				};
+
+				//najpierw sektor
+				auto sec = map->getPlayerSector(pos, nullptr);
+				if(!sec) continue;
+
+				//tworzymy wroga z mapa i sektorem
+				auto enemy = new Imp(pos, map, sec);
+
+				//laduj sprite'y dooma
+				enemy->InitAnimations(map->texture_binder, ImpInitiator);
+
+				//zestaw wysokosc i kolizje w pionie
+				enemy->SetLimits(svec2(sec->floor_height, sec->ceil_height));
+
+				//wrzuc do sektora
+				sec->entities.emplace(enemy);
+			}
+
+			printf(">>> spawned test enemies in front of player!\n");
+		}
+
 
 	}
 

@@ -12,10 +12,10 @@
 bool Player::has_backpack = false;
 int16_t Player::armor = 0;
 int16_t Player::health = 100;
-uint16_t Player::ammo[] = {500, 50, 60, 40};
+uint16_t Player::ammo[] = {50, 0, 0, 0};
 uint16_t Player::max_ammo[] = {200, 100, 100, 600};
 uint8_t Player::current_weapon = 2;
-bool Player::has_weapon[] = {1,0,1,0,1,0,0,0,0};
+bool Player::has_weapon[] = {1,0,1,0,0,0,0,0,0};
 bool Player::next_weapon_selected = false;
 double Player::next_weapon_selected_timer = 0;
 std::vector<DoomGunInterface*> Player::weapons={};
@@ -23,7 +23,7 @@ svec3 Player::position = {0,0,0};
 fvec3 Player::pos = {0,0,0};
 fvec3 Player::LookDir = {0,0,0};
 Player* Player::Instance = nullptr;
-bool Player::keys[3] = {1,1,1};
+bool Player::keys[3] = {0,0,0};
 
 Player::Player(svec3 position, float angle, NewModels::Map* map) {
 	Player::position = position;
@@ -46,13 +46,11 @@ void Player::HandleEvent() {
 	fvec3 right(cosf(yaw_rad), 0.0f, -sinf(yaw_rad));
 	fvec3 vertical(0.0f, 1.0f, 0.0f);
 
-	float move_forward = 0.0f, move_strafe = 0.0f, move_vertical = 0.0f;
+	float move_forward = 0.0f, move_strafe = 0.0f;
 	if (keys[SDL_SCANCODE_W]) move_forward += 1;
 	if (keys[SDL_SCANCODE_S]) move_forward -= 1;
 	if (keys[SDL_SCANCODE_A]) move_strafe -= 1;
 	if (keys[SDL_SCANCODE_D]) move_strafe += 1;
-	if (keys[SDL_SCANCODE_SPACE]) move_vertical += 1;
-	if (keys[SDL_SCANCODE_LCTRL] || keys[SDL_SCANCODE_RCTRL]) move_vertical -= 1;
 	if (keys[SDL_SCANCODE_E] || keys[SDL_SCANCODE_SPACE]) ray_launched = true;
 
 	for (int i = SDL_SCANCODE_1; i <= SDL_SCANCODE_9; i++) {

@@ -2,13 +2,18 @@ compilation_database_dir: ../buildDir         # <-- tu jest compile_commands.jso
 output_directory: uml
 
 add_compile_flags:
-  - '-I C:\msys64\mingw64\include'
+  - -IC:\msys64\clang64\include\c++\v1
+  - -IC:\msys64\clang64\include\
+  - -IC:/msys64/clang64/lib/clang/19/include
+  - -D_WIN32
+  - -DWIN32
+
 
 diagrams:
   all_classes:
     type: class
     glob:
-      - ../src/parser.cpp
+      - ../src/*.cpp
     include:
       namespaces:
         - new_models   # jeśli używasz namespace, wpisz go tu (np. doom, engine)                  # pusty = global namespace

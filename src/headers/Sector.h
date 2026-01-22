@@ -5,7 +5,6 @@
 #ifndef DOOM_SECTOR_H
 #define DOOM_SECTOR_H
 #include <vector>
-
 #include "Entity.h"
 #include "new_models.h"
 #include "texture.h"

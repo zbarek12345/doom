@@ -4,9 +4,6 @@
 
 #ifndef DOOM_PROJECTILE_H
 #define DOOM_PROJECTILE_H
-#include <cstdint>
-#include <iostream>
-
 #include "Sector.h"
 #include "vec3.h"
 

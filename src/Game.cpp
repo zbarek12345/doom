@@ -134,12 +134,12 @@ void Game::Run() {
     bool running = true;
     SDL_Event event;
     double deltaTime = 0.0;
-    double fps = 120.0f;
+    double fps = 144.0f;
     double fps_time = 1.0f / fps;
     double render_time = 0.0f;
     uint32_t lastTime = SDL_GetTicks();
     ///TODO -- xxx
-    // SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
     bool size_changed = true;  // Force initial projection setup
     bool fire_btn_down = false;
 
@@ -209,6 +209,7 @@ void Game::Run() {
             if (player) player->Render();
             if (current_map) current_map->Render();
             // todo enemy render
+
 
             HudRender::Render();
             render_time = fmod(render_time, fps_time);

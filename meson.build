@@ -2,7 +2,7 @@ project('doom', 'cpp',
         version : '1.0.0',
         default_options : ['warning_level=3', 'cpp_std=c++23'])
 
-#regex = dependency('regex')
+regex = dependency('regex')
 gl = dependency('opengl')
 sdl2 = dependency('sdl2')
 sdl2_main = dependency('sdl2')
@@ -25,9 +25,10 @@ doom = executable('doom',
                    'src/Game.cpp', 'src/Camera.cpp', 'src/Player.cpp',
                    'src/CircuitFinder.cpp', 'src/TexBinder.cpp', 'main.cpp',
                    'src/RawLumpKeeper.cpp', 'src/textures/playpal.cpp', 'src/Collectibles.cpp',
-                   'src/HudRender.cpp', 'src/Projectile.cpp', 'src/Weapon.cpp', 'src/SpecialBinder.cpp', 'src/ActionPerformer.cpp', NewModels],
-                  dependencies : [sdl2, sdl2_main, gl, cdt_lib, glew],
-                  cpp_args : ['-funroll-loops', '-march=native','-O0'],
+                   'src/HudRender.cpp', 'src/Projectile.cpp', 'src/Weapon.cpp',
+                   'src/SpecialBinder.cpp', 'src/ActionPerformer.cpp', NewModels],
+                  dependencies : [regex, sdl2, sdl2_main, gl, cdt_lib, glew],
+                  cpp_args : ['-funroll-loops', '-march=native','-O3'],
                   #link_args : ['-static-libgcc', '-static-libstdc++','-static'],
                   install : true)
 
